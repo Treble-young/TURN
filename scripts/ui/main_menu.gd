@@ -3,10 +3,14 @@ extends Control
 const GAME_SCENE := "res://scenes/expedition/route_map.tscn"
 
 @onready var start_button: Button = $Center/Menu/Buttons/StartGame
+@onready var seed_field: LineEdit = $Center/Menu/Buttons/Seed
+@onready var seed_error: Label = $Center/Menu/Buttons/SeedError
 
 func _ready() -> void:
 	_apply_theme()
 	start_button.grab_focus()
+	seed_field.text_changed.connect(func(_value: String): seed_error.hide())
+	seed_field.text_submitted.connect(func(_value: String): _on_start_game_pressed())
 	resized.connect(queue_redraw)
 
 func _draw() -> void:
@@ -44,8 +48,16 @@ func _apply_theme() -> void:
 	theme = menu_theme
 
 func _on_start_game_pressed() -> void:
+	var source := seed_field.text.strip_edges()
+	var seed_value := -1
+	if not source.is_empty():
+		if not source.is_valid_int() or source.to_int() < 0 or source.to_int() > 4294967295:
+			seed_error.show()
+			seed_field.grab_focus()
+			return
+		seed_value = source.to_int()
 	start_button.disabled = true
-	Expedition.start_run()
+	Expedition.start_run(seed_value)
 	var result := get_tree().change_scene_to_file(GAME_SCENE)
 	if result != OK:
 		start_button.disabled = false

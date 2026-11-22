@@ -17,6 +17,15 @@ const ELITE_DROP := 0.30
 const DROP_PER_XP := 0.0015
 const MAX_XP_DROP_BONUS := 0.30
 const KIND_NAMES := ["战斗", "困难战斗", "首领战斗", "商人", "休息处", "不期而遇", "得偿所愿"]
+const KIND_DETAILS := [
+	"清除一波敌人。战胜后获得金币，并有机会获得物品。",
+	"迎战两波更强的敌人，获得更多经验和金币。",
+	"击败本层首领，必定获得一件物品。",
+	"用金币购买物品。可以购买多件，也可以直接离开。",
+	"休息可回复 35% 最大生命。",
+	"途中遇见旅人。你可以接受药膏，或冒险取回金币。",
+	"从石龛里出现的两件物品中选一件。",
+]
 const ITEMS := {
 	"blade": {"name": "磨锋石", "effect": "攻击伤害 +4", "price": 18},
 	"heart": {"name": "琥珀护符", "effect": "生命上限 +12，并回复 12 生命", "price": 22},
@@ -26,6 +35,8 @@ const ITEMS := {
 
 var rng := RandomNumberGenerator.new()
 var maps: Array = []
+var crossings: Array[Array] = []
+var run_seed := 0
 var floor_number := 1
 var stage := -1
 var lane := -1
@@ -43,11 +54,18 @@ var active := false
 var won := false
 var report := ""
 
-func start_run() -> void:
-	rng.randomize()
+func start_run(requested_seed: int = -1) -> void:
+	if requested_seed < 0:
+		rng.randomize()
+		run_seed = rng.randi()
+	else:
+		run_seed = requested_seed
+	rng.seed = run_seed
 	maps.clear()
-	for map_index in range(FLOOR_COUNT):
+	crossings.clear()
+	for _floor_index in range(FLOOR_COUNT):
 		maps.append(_generate_floor())
+		crossings.append(_generate_crossings())
 	floor_number = 1
 	stage = -1
 	lane = -1
@@ -80,6 +98,20 @@ func _generate_floor() -> Array:
 	result.append([Kind.BOSS])
 	return result
 
+func _generate_crossings() -> Array[Vector3i]:
+	var stages: Array[int] = [1, 2, 3, 4]
+	var lanes: Array[int] = [0, 1, 2]
+	_shuffle(stages)
+	_shuffle(lanes)
+	var result: Array[Vector3i] = []
+	for index in LANE_COUNT:
+		var source := lanes[index]
+		var target := 1
+		if source == 1:
+			target = 0 if rng.randi_range(0, 1) == 0 else 2
+		result.append(Vector3i(stages[index], source, target))
+	return result
+
 func _shuffle(values: Array) -> void:
 	for index in range(values.size() - 1, 0, -1):
 		var other := rng.randi_range(0, index)
@@ -93,7 +125,13 @@ func current_map() -> Array:
 func has_route(from_lane: int, to_stage: int, to_lane: int) -> bool:
 	if to_stage == STAGE_COUNT - 1:
 		return to_lane == 0
-	return absi(from_lane - to_lane) <= 1
+	return from_lane == to_lane or crossings[floor_number - 1].has(Vector3i(to_stage, from_lane, to_lane))
+
+func has_crossing(from_stage: int, from_lane: int) -> bool:
+	for crossing: Vector3i in crossings[floor_number - 1]:
+		if crossing.x == from_stage + 1 and crossing.y == from_lane:
+			return true
+	return false
 
 func travel_cost(to_stage: int, to_lane: int) -> int:
 	if stage < 0 or to_stage == STAGE_COUNT - 1 or lane == to_lane:

@@ -59,6 +59,22 @@ mouse_filter = 2
 layout_mode = 2
 theme_override_constants/separation = 12
 
+[node name="Seed" type="LineEdit" parent="Center/Menu/Buttons"]
+custom_minimum_size = Vector2(320, 38)
+layout_mode = 2
+placeholder_text = "地图种子（留空随机）"
+max_length = 10
+tooltip_text = "输入 0 至 4294967295 的整数，可重现地图和换线点。"
+alignment = 1
+
+[node name="SeedError" type="Label" parent="Center/Menu/Buttons"]
+visible = false
+layout_mode = 2
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(1, 0.66, 0.53, 1)
+theme_override_font_sizes/font_size = 14
+text = "种子请输入 0 至 4294967295 的整数。"
+
 [node name="StartGame" type="Button" parent="Center/Menu/Buttons"]
 custom_minimum_size = Vector2(320, 52)
 layout_mode = 2

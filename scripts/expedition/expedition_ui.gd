@@ -1,0 +1,63 @@
+extends RefCounted
+
+const GOLD := Color("#e8bd72")
+const TEXT := Color("#f6e5c6")
+const SOFT := Color("#c8ad89")
+const BACKGROUND := Color("#20191a")
+const PANEL := Color("#2b2120")
+const BORDER := Color("#674837")
+
+static func make_theme() -> Theme:
+	var result := Theme.new()
+	var font := SystemFont.new()
+	font.font_names = PackedStringArray(["Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans CJK SC"])
+	result.default_font = font
+	result.default_font_size = 17
+	result.set_color("font_color", "Label", TEXT)
+	result.set_color("font_color", "Button", TEXT)
+	result.set_color("font_hover_color", "Button", Color("#fff1d0"))
+	result.set_color("font_disabled_color", "Button", Color("#aa927e"))
+	result.set_stylebox("normal", "Button", box(Color("#4c3429"), Color("#946741"), 1))
+	result.set_stylebox("hover", "Button", box(Color("#684831"), GOLD, 1))
+	result.set_stylebox("pressed", "Button", box(Color("#3a2921"), GOLD, 1))
+	result.set_stylebox("disabled", "Button", box(Color("#35302d"), Color("#584735"), 1))
+	result.set_stylebox("focus", "Button", box(Color.TRANSPARENT, GOLD, 2))
+	return result
+
+static func box(fill: Color, border: Color, width: int, radius: int = 4) -> StyleBoxFlat:
+	var result := StyleBoxFlat.new()
+	result.bg_color = fill
+	result.border_color = border
+	result.set_border_width_all(width)
+	result.set_corner_radius_all(radius)
+	return result
+
+static func set_margins(style: StyleBoxFlat, horizontal: float, vertical: float) -> void:
+	style.content_margin_left = horizontal
+	style.content_margin_right = horizontal
+	style.content_margin_top = vertical
+	style.content_margin_bottom = vertical
+
+static func label(value: String, font_size: int = 17, color: Color = TEXT) -> Label:
+	var result := Label.new()
+	result.text = value
+	result.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	result.add_theme_font_size_override("font_size", font_size)
+	result.add_theme_color_override("font_color", color)
+	result.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return result
+
+static func action(value: String, callback: Callable, disabled: bool = false) -> Button:
+	var button := Button.new()
+	button.text = value
+	button.disabled = disabled
+	button.custom_minimum_size.y = 43
+	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	button.pressed.connect(callback)
+	return button
+
+static func inventory_text() -> String:
+	var items := PackedStringArray()
+	for id in Expedition.relics:
+		items.append("%s ×%d" % [Expedition.ITEMS[id]["name"], Expedition.relics[id]])
+	return "  ·  ".join(items) if not items.is_empty() else "还没有物品"
