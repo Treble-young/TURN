@@ -97,6 +97,12 @@ func _build_menu() -> void:
 	resume_button.custom_minimum_size.y = 46
 	resume_button.pressed.connect(resume_game)
 	list.add_child(resume_button)
+	var main_menu_button := Button.new()
+	main_menu_button.name = "ReturnToMainMenu"
+	main_menu_button.text = "返回主界面"
+	main_menu_button.custom_minimum_size.y = 46
+	main_menu_button.pressed.connect(_return_to_main_menu)
+	list.add_child(main_menu_button)
 	var quit_button := Button.new()
 	quit_button.text = "退出游戏"
 	quit_button.custom_minimum_size.y = 46
@@ -105,6 +111,15 @@ func _build_menu() -> void:
 		get_tree().quit()
 	)
 	list.add_child(quit_button)
+
+func _return_to_main_menu() -> void:
+	Settings.save_settings()
+	var tree := get_tree()
+	var result := tree.change_scene_to_file("res://scenes/ui/main_menu.tscn")
+	if result == OK:
+		tree.paused = false
+	else:
+		push_error("Unable to return to main menu: %s" % error_string(result))
 
 func _add_volume_row(list: VBoxContainer, label_text: String, bus: String) -> void:
 	var row := HBoxContainer.new()
