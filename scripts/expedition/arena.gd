@@ -1,5 +1,7 @@
 extends Node2D
 
+const ENCOUNTER := preload("res://scripts/expedition/battle_encounter.gd")
+const ENEMY_SCENE := preload("res://scenes/enemies/enemy.tscn")
 const MAP := "res://scenes/expedition/route_map.tscn"
 const FIELD := Rect2(40, 107, 1072, 498)
 const GOLD := Color("#e5c082")
@@ -8,11 +10,6 @@ const SPAWN_POINTS := [
 	Vector2(230, 216), Vector2(922, 216), Vector2(228, 507),
 	Vector2(925, 507), Vector2(578, 200), Vector2(578, 519),
 ]
-const ENEMIES := {
-	"goblin": preload("res://scenes/enemies/goblin.tscn"),
-	"slime_medium": preload("res://scenes/enemies/slime_medium.tscn"),
-	"slime_large": preload("res://scenes/enemies/slime_large.tscn"),
-}
 
 @onready var player: EclipsePlayer = $Player
 @onready var hud: CanvasLayer = $HUD
@@ -43,7 +40,7 @@ func _ready() -> void:
 	player.attack_damage = Expedition.damage(progress.level)
 	player.move_speed = Expedition.speed()
 	player.health = Expedition.health
-	waves = _choose_waves()
+	waves = ENCOUNTER.waves_for(Expedition.current_kind, Expedition.floor_number)
 	_build_hud()
 	player.health_changed.connect(_update_health)
 	player.died.connect(_defeat)
@@ -52,20 +49,6 @@ func _ready() -> void:
 	_update_health(player.health, player.max_health)
 	_update_experience(progress.level, progress.experience, progress.experience_required())
 	_spawn_next_wave()
-
-func _choose_waves() -> Array:
-	var floor_number := Expedition.floor_number
-	match Expedition.current_kind:
-		Expedition.Kind.BOSS:
-			return [["goblin", "slime_medium", "goblin"], ["boss", "goblin", "slime_medium"]]
-		Expedition.Kind.ELITE:
-			return [["goblin", "slime_medium", "goblin"], ["slime_large", "goblin", "goblin"]]
-	var first: Array[String] = ["goblin", "goblin", "slime_medium"]
-	if floor_number >= 3:
-		first.append("goblin")
-	if floor_number == Expedition.FLOOR_COUNT:
-		first.append("slime_medium")
-	return [first]
 
 func _process(delta: float) -> void:
 	if not is_instance_valid(progress) or finished or player.is_dead:
@@ -105,9 +88,8 @@ func _spawn_next_wave() -> void:
 
 func _spawn(kind: String, spot: Vector2) -> void:
 	var is_boss := kind == "boss"
-	var resource: PackedScene = ENEMIES["slime_large" if is_boss else kind]
-	var enemy := resource.instantiate() as EclipseEnemy
-	var stats := enemy.stats.duplicate() as EnemyStats
+	var enemy := ENEMY_SCENE.instantiate() as EclipseEnemy
+	var stats := ENCOUNTER.stats_for(kind).duplicate() as EnemyStats
 	var floor_scale := 1.0 + 0.13 * (Expedition.floor_number - 1)
 	var hard := Expedition.current_kind != Expedition.Kind.BATTLE
 	stats.max_health *= floor_scale * (1.21 if hard else 1.0)
@@ -115,7 +97,7 @@ func _spawn(kind: String, spot: Vector2) -> void:
 	if hard:
 		stats.experience_reward = ceili(stats.experience_reward * 1.55)
 	if is_boss:
-		stats.display_name = "深沼首领"
+		stats.display_name = ENCOUNTER.BOSS_NAME
 		stats.max_health *= 2.2
 		stats.damage *= 1.30
 		stats.visual_scale *= 1.32

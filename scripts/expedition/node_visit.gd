@@ -5,7 +5,7 @@ const MAP := "res://scenes/expedition/route_map.tscn"
 const INTRO := [
 	"", "", "",
 	"商人摊开货物。看看有没有合你心意的物品。",
-	"营火还温着。休息可以回复 35% 最大生命。",
+	"营火还温着。休息可以恢复生命值。",
 	"一位旅人愿意分你一些药膏。山崖下也挂着一个钱袋。",
 	"石龛里浮出两件物品。你可以带走一件。",
 ]
@@ -67,6 +67,7 @@ func _refresh() -> void:
 				body.add_child(UI.label(Expedition.report, 15, UI.GOLD))
 			body.add_child(UI.action("离开商人", _leave_shop))
 		Expedition.Kind.REST:
+			body.add_child(UI.label("本次休息可恢复 %d 点生命。" % roundi(Expedition.rest_heal_amount()), 16, UI.GOLD))
 			body.add_child(UI.action("休息", _rest))
 		Expedition.Kind.ENCOUNTER:
 			body.add_child(UI.action("接受药膏 · 回复 8 生命", _encounter.bind(false)))

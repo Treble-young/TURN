@@ -1,6 +1,7 @@
 extends Control
 
 const UI := preload("res://scripts/expedition/expedition_ui.gd")
+const ENCOUNTER := preload("res://scripts/expedition/battle_encounter.gd")
 const ARENA := "res://scenes/expedition/arena.tscn"
 const VISIT := "res://scenes/expedition/node_visit.tscn"
 const MAIN_MENU := "res://scenes/ui/main_menu.tscn"
@@ -15,7 +16,9 @@ const KIND_COLORS := ["#623a31", "#863a2b", "#572b38", "#45584a", "#405866", "#5
 
 var scroll: ScrollContainer
 var canvas: Control
+var preview_scroll: ScrollContainer
 var details: VBoxContainer
+var travel_controls: VBoxContainer
 var selected := Vector2i(-1, -1)
 var node_buttons: Dictionary = {}
 var header_stats: Label
@@ -110,12 +113,17 @@ func _build_sidebar() -> void:
 	var body := VBoxContainer.new()
 	body.add_theme_constant_override("separation", 13)
 	panel.add_child(body)
+	preview_scroll = ScrollContainer.new()
+	preview_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	preview_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body.add_child(preview_scroll)
 	details = VBoxContainer.new()
+	details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	details.add_theme_constant_override("separation", 12)
-	body.add_child(details)
-	var space := Control.new()
-	space.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	body.add_child(space)
+	preview_scroll.add_child(details)
+	travel_controls = VBoxContainer.new()
+	travel_controls.add_theme_constant_override("separation", 6)
+	body.add_child(travel_controls)
 	body.add_child(HSeparator.new())
 	body.add_child(UI.label("随身物品", 17, UI.GOLD))
 	inventory = UI.label("", 15, UI.SOFT)
@@ -249,9 +257,12 @@ func _update_details() -> void:
 		Expedition.gold, Expedition.level, Expedition.total_experience, Expedition.run_seed,
 	]
 	inventory.text = UI.inventory_text()
-	for child in details.get_children():
-		details.remove_child(child)
-		child.queue_free()
+	for section in [details, travel_controls]:
+		for child in section.get_children():
+			section.remove_child(child)
+			child.queue_free()
+	preview_scroll.scroll_vertical = 0
+	travel_controls.hide()
 	if not Expedition.active:
 		details.add_child(UI.label("远征完成" if Expedition.won else "远征结束", 27, UI.GOLD))
 		details.add_child(UI.label("你击败了五层的首领。" if Expedition.won else "你在第 %d 层倒下。" % Expedition.floor_number))
@@ -271,19 +282,55 @@ func _preview_node() -> void:
 	var kind: int = Expedition.current_map()[selected.x][selected.y]
 	details.add_child(UI.label(Expedition.KIND_NAMES[kind], 27, UI.GOLD))
 	details.add_child(UI.label(Expedition.KIND_DETAILS[kind]))
+	if Expedition.is_battle(kind):
+		_preview_battle(kind)
+	elif kind == Expedition.Kind.REST:
+		var restore := roundi(Expedition.rest_heal_amount())
+		var limit := roundi(Expedition.REST_HEAL_FRACTION * 100.0)
+		var outcome := "当前可恢复 %d 点生命。" % restore if restore > 0 else "当前生命已满。"
+		details.add_child(UI.label("回复量按最大生命值的 %d%% 计算。\n%s" % [limit, outcome], 16, UI.GOLD))
 	if Expedition.has_crossing(selected.x, selected.y):
 		details.add_child(UI.label("离开此节点时可付费换线。", 15, UI.SOFT))
+	travel_controls.show()
 	if Expedition.visited.has(selected):
-		details.add_child(UI.label("已经过此节点", 16, UI.SOFT))
+		travel_controls.add_child(UI.label("已经过此节点", 16, UI.SOFT))
 	elif not Expedition.can_reach(selected.x, selected.y):
-		details.add_child(UI.label("当前路线无法抵达此节点", 16, UI.SOFT))
+		travel_controls.add_child(UI.label("当前路线无法抵达此节点", 16, UI.SOFT))
 	else:
 		var cost := Expedition.travel_cost(selected.x, selected.y)
 		var affordable := Expedition.gold >= cost
-		details.add_child(UI.label("换线费用 · %d 金币" % cost if cost > 0 else "前往费用 · 免费", 16, UI.GOLD))
+		travel_controls.add_child(UI.label("换线费用 · %d 金币" % cost if cost > 0 else "前往费用 · 免费", 16, UI.GOLD))
 		if not affordable:
-			details.add_child(UI.label("金币不足", 15, UI.SOFT))
-		details.add_child(UI.action("确认前往", _confirm_node, not affordable))
+			travel_controls.add_child(UI.label("金币不足", 15, UI.SOFT))
+		travel_controls.add_child(UI.action("确认前往", _confirm_node, not affordable))
+
+func _preview_battle(kind: int) -> void:
+	var waves := ENCOUNTER.waves_for(kind, Expedition.floor_number)
+	var rows := PackedStringArray()
+	for index in waves.size():
+		rows.append("第 %d 波　%s" % [index + 1, ENCOUNTER.wave_summary(waves[index])])
+	details.add_child(UI.label("敌人编成", 16, UI.GOLD))
+	details.add_child(UI.label("\n".join(rows), 16))
+	var splits := ENCOUNTER.split_summary(waves)
+	if not splits.is_empty():
+		details.add_child(UI.label("分裂增援：%s" % splits, 15, UI.SOFT))
+	details.add_child(UI.label("战斗地图", 16, UI.GOLD))
+	var frame := PanelContainer.new()
+	frame.custom_minimum_size.y = 82
+	frame.add_theme_stylebox_override("panel", UI.box(UI.BACKGROUND, UI.BORDER, 1))
+	details.add_child(frame)
+	var thumbnail := ENCOUNTER.battlefield_preview(kind, Expedition.floor_number, selected)
+	if thumbnail:
+		var preview := TextureRect.new()
+		preview.texture = thumbnail
+		preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		frame.add_child(preview)
+	else:
+		var placeholder := UI.label("地图预览待更新", 15, UI.SOFT)
+		placeholder.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		placeholder.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		frame.add_child(placeholder)
 
 func _confirm_node() -> void:
 	if not Expedition.enter_node(selected.x, selected.y):

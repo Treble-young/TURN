@@ -1,6 +1,8 @@
 class_name EclipseEnemy
 extends CharacterBody2D
 
+const SPLIT_OFFSETS := [-1, 1]
+
 @export var stats: EnemyStats
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 var health: float
@@ -77,7 +79,7 @@ func take_damage(amount: float) -> void:
 func _animation_finished() -> void:
 	if sprite.animation == &"die":
 		if not stats.split_stats_path.is_empty():
-			for side in [-1, 1]:
+			for side in SPLIT_OFFSETS:
 				var child := load("res://scenes/enemies/enemy.tscn").instantiate() as EclipseEnemy
 				child.stats = load(stats.split_stats_path)
 				child.position = position + Vector2(side * (child.stats.body_radius + 4), 0)

@@ -12,6 +12,7 @@ const BASE_DAMAGE := 18.0
 const BASE_SPEED := 240.0
 const HEALTH_PER_LEVEL := 4.0
 const DAMAGE_PER_LEVEL := 2.0
+const REST_HEAL_FRACTION := 0.35
 const NORMAL_DROP := 0.12
 const ELITE_DROP := 0.30
 const DROP_PER_XP := 0.0015
@@ -21,10 +22,10 @@ const KIND_DETAILS := [
 	"清除一波敌人。战胜后获得金币，并有机会获得物品。",
 	"迎战两波更强的敌人，获得更多经验和金币。",
 	"击败本层首领，必定获得一件物品。",
-	"用金币购买物品。可以购买多件，也可以直接离开。",
-	"休息可回复 35% 最大生命。",
-	"途中遇见旅人。你可以接受药膏，或冒险取回金币。",
-	"从石龛里出现的两件物品中选一件。",
+	"用金币购买物品，获得攻击、生命、移动或金币收益等增益。可以购买多件，也可以直接离开。",
+	"在营火旁休息可以恢复生命值。",
+	"途中遇见旅人。你可以接受药膏恢复生命，或冒险消耗生命换取金币。",
+	"石龛会出现两件物品。任选一件免费带走。",
 ]
 const ITEMS := {
 	"blade": {"name": "磨锋石", "effect": "攻击伤害 +4", "price": 18},
@@ -207,9 +208,12 @@ func complete_shop() -> void:
 	if node_pending and current_kind == Kind.SHOP:
 		node_pending = false
 
+func rest_heal_amount() -> float:
+	return minf(max_health() - health, ceilf(max_health() * REST_HEAL_FRACTION))
+
 func complete_rest() -> void:
 	if node_pending and current_kind == Kind.REST:
-		var healed := minf(max_health() - health, ceilf(max_health() * 0.35))
+		var healed := rest_heal_amount()
 		health += healed
 		report = "休整完毕 · 回复 %d 生命" % roundi(healed)
 		node_pending = false
