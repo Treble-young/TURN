@@ -9,13 +9,18 @@ const HEADER_HEIGHT := 70.0
 const SIDEBAR_WIDTH := 322.0
 const MAP_HEIGHT := 1040.0
 const ROW_GAP := 170.0
+const DRAG_THRESHOLD := 8.0
 const INK := Color("#533727")
+const STITCH := Color("#886143c7")
+const STITCH_ACCENT := Color("#a76d40")
 const ROUTE_OFFSETS := [Vector2(0, 0), Vector2(-18, 9), Vector2(12, -5), Vector2(8, -9), Vector2(-10, 5)]
 const KIND_MARKS := ["战", "险", "王", "商", "歇", "遇", "愿"]
 const KIND_COLORS := ["#623a31", "#863a2b", "#572b38", "#45584a", "#405866", "#585274", "#7c572c"]
 
 var scroll: ScrollContainer
 var canvas: Control
+var sidebar: PanelContainer
+var close_preview: Button
 var preview_scroll: ScrollContainer
 var details: VBoxContainer
 var travel_controls: VBoxContainer
@@ -24,6 +29,10 @@ var node_buttons: Dictionary = {}
 var header_stats: Label
 var inventory: Label
 var paper_texture: NoiseTexture2D
+var tracking_drag := false
+var dragging := false
+var drag_origin := Vector2.ZERO
+var drag_scroll_origin := 0
 
 func _ready() -> void:
 	if Expedition.maps.is_empty():
@@ -72,10 +81,10 @@ func _build_canvas() -> void:
 	add_child(scroll)
 	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	scroll.offset_top = HEADER_HEIGHT
-	scroll.offset_right = -SIDEBAR_WIDTH
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_ALWAYS
 	scroll.follow_focus = true
+	scroll.mouse_default_cursor_shape = Control.CURSOR_DRAG
 	var bar := scroll.get_v_scroll_bar()
 	bar.custom_minimum_size.x = 11
 	bar.add_theme_stylebox_override("scroll", UI.box(Color("#392c29"), UI.BORDER, 0))
@@ -95,24 +104,28 @@ func _build_canvas() -> void:
 	var tones := Gradient.new()
 	tones.colors = PackedColorArray([Color("#c5a073"), Color("#e7c694")])
 	paper_texture = NoiseTexture2D.new()
-	paper_texture.width = 832
+	paper_texture.width = 1152
 	paper_texture.height = int(MAP_HEIGHT)
 	paper_texture.color_ramp = tones
 	paper_texture.noise = noise
 	paper_texture.changed.connect(canvas.queue_redraw)
 
 func _build_sidebar() -> void:
-	var panel := PanelContainer.new()
-	add_child(panel)
-	panel.set_anchors_and_offsets_preset(Control.PRESET_RIGHT_WIDE)
-	panel.offset_left = -SIDEBAR_WIDTH
-	panel.offset_top = HEADER_HEIGHT
+	sidebar = PanelContainer.new()
+	add_child(sidebar)
+	sidebar.set_anchors_and_offsets_preset(Control.PRESET_RIGHT_WIDE)
+	sidebar.offset_left = -SIDEBAR_WIDTH
+	sidebar.offset_top = HEADER_HEIGHT
 	var style := UI.box(UI.PANEL, UI.BORDER, 1, 0)
 	UI.set_margins(style, 23, 22)
-	panel.add_theme_stylebox_override("panel", style)
+	sidebar.add_theme_stylebox_override("panel", style)
 	var body := VBoxContainer.new()
 	body.add_theme_constant_override("separation", 13)
-	panel.add_child(body)
+	sidebar.add_child(body)
+	close_preview = UI.action("关闭", _close_preview)
+	close_preview.custom_minimum_size = Vector2(62, 29)
+	close_preview.size_flags_horizontal = Control.SIZE_SHRINK_END
+	body.add_child(close_preview)
 	preview_scroll = ScrollContainer.new()
 	preview_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	preview_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -129,11 +142,42 @@ func _build_sidebar() -> void:
 	inventory = UI.label("", 15, UI.SOFT)
 	body.add_child(inventory)
 
+func _input(event: InputEvent) -> void:
+	if not is_instance_valid(scroll):
+		return
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed:
+			var on_scrollbar := scroll.get_v_scroll_bar().get_global_rect().has_point(event.position)
+			tracking_drag = scroll.get_global_rect().has_point(event.position) and not on_scrollbar
+			dragging = false
+			drag_origin = event.position
+			drag_scroll_origin = scroll.scroll_vertical
+		else:
+			tracking_drag = false
+			# Keep the drag flag until node buttons have processed this release.
+			if dragging:
+				_finish_drag.call_deferred()
+	elif event is InputEventMouseMotion and tracking_drag:
+		if (event.button_mask & MOUSE_BUTTON_MASK_LEFT) == 0:
+			tracking_drag = false
+			dragging = false
+			return
+		var delta: Vector2 = event.position - drag_origin
+		if dragging or delta.length() >= DRAG_THRESHOLD:
+			dragging = true
+			scroll.scroll_vertical = drag_scroll_origin - roundi(delta.y)
+
+func _finish_drag() -> void:
+	if not tracking_drag:
+		dragging = false
+
 func _draw_map() -> void:
 	var area := Rect2(Vector2.ZERO, canvas.size)
 	canvas.draw_rect(area, Color("#d3a973"))
 	canvas.draw_texture_rect(paper_texture, area, false)
 	canvas.draw_rect(area.grow(-13), Color("#916b48"), false, 1.0)
+	_draw_embroidered_edge(36.0)
+	_draw_embroidered_edge(area.size.x - 36.0)
 	var rows := Expedition.current_map()
 	for row in range(1, rows.size()):
 		for from_lane in rows[row - 1].size():
@@ -141,14 +185,28 @@ func _draw_map() -> void:
 				if Expedition.has_route(from_lane, row, to_lane):
 					_draw_link(row, from_lane, to_lane)
 
+func _draw_embroidered_edge(x: float) -> void:
+	for edge in [x - 14.0, x + 14.0]:
+		canvas.draw_dashed_line(Vector2(edge, 22), Vector2(edge, MAP_HEIGHT - 22), STITCH, 1.0, 4.0)
+	for y in range(45, int(MAP_HEIGHT) - 28, 52):
+		var knot := Vector2(x, y)
+		var pattern := PackedVector2Array([
+			knot + Vector2(0, -16), knot + Vector2(9, 0),
+			knot + Vector2(0, 16), knot + Vector2(-9, 0), knot + Vector2(0, -16),
+		])
+		canvas.draw_polyline(pattern, STITCH, 1.2, true)
+		canvas.draw_line(knot + Vector2(-5, -5), knot + Vector2(5, 5), STITCH_ACCENT, 1.2, true)
+		canvas.draw_line(knot + Vector2(5, -5), knot + Vector2(-5, 5), STITCH_ACCENT, 1.2, true)
+		canvas.draw_dashed_line(knot + Vector2(0, 19), knot + Vector2(0, 33), STITCH, 1.1, 2.5)
+
 func _draw_link(row: int, from_lane: int, to_lane: int) -> void:
 	var from := _point(row - 1, from_lane)
 	var destination := _point(row, to_lane)
 	var previous := Expedition.visited.has(Vector2i(row - 1, from_lane))
 	var followed := previous and Expedition.visited.has(Vector2i(row, to_lane))
-	var next := previous and Expedition.can_reach(row, to_lane) and Expedition.gold >= Expedition.travel_cost(row, to_lane)
-	var paid := row < Expedition.STAGE_COUNT - 1 and from_lane != to_lane
-	var color := Color("#906135") if paid else Color("#a17a54")
+	var next := previous and Expedition.can_reach(row, to_lane)
+	var crosses := row < Expedition.STAGE_COUNT - 1 and from_lane != to_lane
+	var color := Color("#906135") if crosses else Color("#a17a54")
 	var thickness := 1.8
 	if followed:
 		color = Color("#553627")
@@ -164,7 +222,7 @@ func _draw_link(row: int, from_lane: int, to_lane: int) -> void:
 	curve.bake_interval = 4.0
 	curve.add_point(from, Vector2.ZERO, sway - lift)
 	curve.add_point(destination, sway + lift)
-	if paid:
+	if crosses:
 		var length := curve.get_baked_length()
 		var offset := 0.0
 		while offset < length:
@@ -179,7 +237,7 @@ func _point(row: int, lane_index: int) -> Vector2:
 	if row == Expedition.STAGE_COUNT - 1:
 		return Vector2(canvas.size.x * 0.5, y)
 	var shift: Vector2 = ROUTE_OFFSETS[(row + lane_index + Expedition.floor_number - 1) % ROUTE_OFFSETS.size()]
-	return Vector2(canvas.size.x * (0.20 + lane_index * 0.30), y) + shift
+	return Vector2(canvas.size.x * (0.17 + lane_index * 0.33), y) + shift
 
 func _build_nodes() -> void:
 	for button: Button in node_buttons.values():
@@ -189,6 +247,8 @@ func _build_nodes() -> void:
 	var rows := Expedition.current_map()
 	for row in rows.size():
 		for lane_index in rows[row].size():
+			if not Expedition.node_exists_at(row, lane_index):
+				continue
 			var kind: int = rows[row][lane_index]
 			var button := Button.new()
 			button.text = KIND_MARKS[kind]
@@ -225,7 +285,7 @@ func _style_nodes() -> void:
 		var button: Button = node_buttons[key]
 		var kind: int = rows[key.x][key.y]
 		var tint := Color(KIND_COLORS[kind])
-		var reachable := Expedition.can_reach(key.x, key.y) and Expedition.gold >= Expedition.travel_cost(key.x, key.y)
+		var reachable := Expedition.can_reach(key.x, key.y)
 		var visited := Expedition.visited.has(key)
 		var fill := tint if reachable or visited else tint.lerp(Color("#e3bb87"), 0.72)
 		var border := UI.GOLD if reachable else Color("#9f7653")
@@ -247,7 +307,14 @@ func _scroll_to_frontier() -> void:
 	scroll.scroll_vertical = roundi(target)
 
 func _select_node(row: int, lane_index: int) -> void:
+	if dragging:
+		return
 	selected = Vector2i(row, lane_index)
+	_style_nodes()
+	_update_details()
+
+func _close_preview() -> void:
+	selected = Vector2i(-1, -1)
 	_style_nodes()
 	_update_details()
 
@@ -263,19 +330,17 @@ func _update_details() -> void:
 			child.queue_free()
 	preview_scroll.scroll_vertical = 0
 	travel_controls.hide()
+	var show_sidebar := selected.x >= 0 or not Expedition.active
+	sidebar.visible = show_sidebar
+	scroll.offset_right = -SIDEBAR_WIDTH if show_sidebar else 0
+	close_preview.visible = Expedition.active
 	if not Expedition.active:
 		details.add_child(UI.label("远征完成" if Expedition.won else "远征结束", 27, UI.GOLD))
 		details.add_child(UI.label("你击败了五层的首领。" if Expedition.won else "你在第 %d 层倒下。" % Expedition.floor_number))
 		details.add_child(UI.label("等级 %d · 累计经验 %d" % [Expedition.level, Expedition.total_experience]))
 		details.add_child(UI.action("开始新的远征", _new_run))
 		details.add_child(UI.action("返回主菜单", func(): get_tree().change_scene_to_file(MAIN_MENU)))
-	elif selected.x < 0:
-		details.add_child(UI.label("选择下一步", 27, UI.GOLD))
-		details.add_child(UI.label("滚轮查看地图。点选节点可查看详情，再确认是否前往。"))
-		details.add_child(UI.label("实线免费。少数节点可沿虚线改道，花费 %d 金币。" % Expedition.SWITCH_COST, 15, UI.SOFT))
-		if not Expedition.report.is_empty():
-			details.add_child(UI.label(Expedition.report, 16, UI.GOLD))
-	else:
+	elif show_sidebar:
 		_preview_node()
 
 func _preview_node() -> void:
@@ -290,19 +355,16 @@ func _preview_node() -> void:
 		var outcome := "当前可恢复 %d 点生命。" % restore if restore > 0 else "当前生命已满。"
 		details.add_child(UI.label("回复量按最大生命值的 %d%% 计算。\n%s" % [limit, outcome], 16, UI.GOLD))
 	if Expedition.has_crossing(selected.x, selected.y):
-		details.add_child(UI.label("离开此节点时可付费换线。", 15, UI.SOFT))
+		details.add_child(UI.label("离开此节点时，可沿虚线免费换线。", 15, UI.SOFT))
 	travel_controls.show()
 	if Expedition.visited.has(selected):
 		travel_controls.add_child(UI.label("已经过此节点", 16, UI.SOFT))
 	elif not Expedition.can_reach(selected.x, selected.y):
 		travel_controls.add_child(UI.label("当前路线无法抵达此节点", 16, UI.SOFT))
 	else:
-		var cost := Expedition.travel_cost(selected.x, selected.y)
-		var affordable := Expedition.gold >= cost
-		travel_controls.add_child(UI.label("换线费用 · %d 金币" % cost if cost > 0 else "前往费用 · 免费", 16, UI.GOLD))
-		if not affordable:
-			travel_controls.add_child(UI.label("金币不足", 15, UI.SOFT))
-		travel_controls.add_child(UI.action("确认前往", _confirm_node, not affordable))
+		if Expedition.stage >= 0 and selected.x < Expedition.STAGE_COUNT - 1 and selected.y != Expedition.lane:
+			travel_controls.add_child(UI.label("前往此节点将免费换线。", 16, UI.GOLD))
+		travel_controls.add_child(UI.action("确认前往", _confirm_node))
 
 func _preview_battle(kind: int) -> void:
 	var waves := ENCOUNTER.waves_for(kind, Expedition.floor_number)

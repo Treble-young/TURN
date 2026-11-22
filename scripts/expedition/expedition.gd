@@ -5,7 +5,8 @@ enum Kind { BATTLE, ELITE, BOSS, SHOP, REST, ENCOUNTER, WISH }
 const FLOOR_COUNT := 5
 const LANE_COUNT := 3
 const STAGE_COUNT := 6
-const SWITCH_COST := 6
+const EMPTY_NODE := -1
+const CROSSINGS_PER_FLOOR := 5
 const STARTING_GOLD := 15
 const BASE_HEALTH := 100.0
 const BASE_DAMAGE := 18.0
@@ -65,8 +66,9 @@ func start_run(requested_seed: int = -1) -> void:
 	maps.clear()
 	crossings.clear()
 	for _floor_index in range(FLOOR_COUNT):
-		maps.append(_generate_floor())
-		crossings.append(_generate_crossings())
+		var rows := _generate_floor()
+		maps.append(rows)
+		crossings.append(_generate_crossings(rows))
 	floor_number = 1
 	stage = -1
 	lane = -1
@@ -97,20 +99,45 @@ func _generate_floor() -> Array:
 	for index in range(0, pool.size(), LANE_COUNT):
 		result.append(pool.slice(index, index + LANE_COUNT))
 	result.append([Kind.BOSS])
+	var removable: Array[Vector2i] = []
+	for row in range(1, STAGE_COUNT - 2):
+		for slot in LANE_COUNT:
+			if result[row][slot] not in [Kind.ENCOUNTER, Kind.WISH]:
+				removable.append(Vector2i(row, slot))
+	var gap := removable[rng.randi_range(0, removable.size() - 1)]
+	result[gap.x][gap.y] = EMPTY_NODE
 	return result
 
-func _generate_crossings() -> Array[Vector3i]:
-	var stages: Array[int] = [1, 2, 3, 4]
-	var lanes: Array[int] = [0, 1, 2]
-	_shuffle(stages)
-	_shuffle(lanes)
-	var result: Array[Vector3i] = []
-	for index in LANE_COUNT:
-		var source := lanes[index]
-		var target := 1
-		if source == 1:
-			target = 0 if rng.randi_range(0, 1) == 0 else 2
-		result.append(Vector3i(stages[index], source, target))
+func _generate_crossings(rows: Array) -> Array[Vector3i]:
+	var choices: Array[Vector3i] = []
+	var gap := Vector2i.ZERO
+	for row in range(1, STAGE_COUNT - 1):
+		var empty_slot: int = rows[row].find(EMPTY_NODE)
+		if empty_slot >= 0:
+			gap = Vector2i(row, empty_slot)
+		for source in LANE_COUNT:
+			if rows[row - 1][source] == EMPTY_NODE:
+				continue
+			for target: int in [source - 1, source + 1]:
+				if target >= 0 and target < LANE_COUNT and rows[row][target] != EMPTY_NODE:
+					choices.append(Vector3i(row, source, target))
+	_shuffle(choices)
+	var detour := 1 if gap.y != 1 else 2 * rng.randi_range(0, 1)
+	# Keep a way out of the interrupted lane and a way back into it.
+	var result: Array[Vector3i] = [
+		Vector3i(gap.x, gap.y, detour),
+		Vector3i(gap.x + 1, detour, gap.y),
+	]
+	var third_lane := 3 - gap.y - detour
+	for crossing in choices:
+		if crossing.y == third_lane:
+			result.append(crossing)
+			break
+	for crossing in choices:
+		if result.size() == CROSSINGS_PER_FLOOR:
+			break
+		if not result.has(crossing):
+			result.append(crossing)
 	return result
 
 func _shuffle(values: Array) -> void:
@@ -123,9 +150,17 @@ func _shuffle(values: Array) -> void:
 func current_map() -> Array:
 	return maps[floor_number - 1]
 
+func node_exists_at(row: int, slot: int) -> bool:
+	if row < 0 or row >= STAGE_COUNT:
+		return false
+	var slots: Array = current_map()[row]
+	return slot >= 0 and slot < slots.size() and slots[slot] != EMPTY_NODE
+
 func has_route(from_lane: int, to_stage: int, to_lane: int) -> bool:
+	if not node_exists_at(to_stage - 1, from_lane) or not node_exists_at(to_stage, to_lane):
+		return false
 	if to_stage == STAGE_COUNT - 1:
-		return to_lane == 0
+		return true
 	return from_lane == to_lane or crossings[floor_number - 1].has(Vector3i(to_stage, from_lane, to_lane))
 
 func has_crossing(from_stage: int, from_lane: int) -> bool:
@@ -134,24 +169,14 @@ func has_crossing(from_stage: int, from_lane: int) -> bool:
 			return true
 	return false
 
-func travel_cost(to_stage: int, to_lane: int) -> int:
-	if stage < 0 or to_stage == STAGE_COUNT - 1 or lane == to_lane:
-		return 0
-	return SWITCH_COST
-
 func can_reach(to_stage: int, to_lane: int) -> bool:
-	if not active or node_pending or to_stage != stage + 1 or to_stage >= STAGE_COUNT:
+	if not active or node_pending or to_stage != stage + 1 or not node_exists_at(to_stage, to_lane):
 		return false
-	var row: Array = current_map()[to_stage]
-	return to_lane >= 0 and to_lane < row.size() and (stage < 0 or has_route(lane, to_stage, to_lane))
+	return stage < 0 or has_route(lane, to_stage, to_lane)
 
 func enter_node(to_stage: int, to_lane: int) -> bool:
 	if not can_reach(to_stage, to_lane):
 		return false
-	var cost := travel_cost(to_stage, to_lane)
-	if gold < cost:
-		return false
-	gold -= cost
 	stage = to_stage
 	lane = to_lane
 	visited.append(Vector2i(stage, lane))
