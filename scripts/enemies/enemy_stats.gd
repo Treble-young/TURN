@@ -3,6 +3,7 @@ extends Resource
 
 @export var display_name: String = "Goblin"
 @export var max_health: float = 24.0
+@export_range(0, 10000) var experience_reward: int = 6
 @export var damage: float = 8.0
 @export var move_speed: float = 100.0
 @export var attack_range: float = 42.0

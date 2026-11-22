@@ -61,6 +61,7 @@ func take_damage(amount: float) -> void:
 	health = maxf(0.0, health - amount)
 	if health <= 0:
 		is_dead = true
+		_drop_experience()
 		is_attacking = false
 		velocity = Vector2.ZERO
 		collision_layer = 0
@@ -85,3 +86,11 @@ func _animation_finished() -> void:
 	elif sprite.animation == &"attack":
 		is_attacking = false
 		sprite.play(&"move")
+
+func _drop_experience() -> void:
+	if stats.experience_reward <= 0:
+		return
+	var orb := preload("res://scenes/pickups/experience_orb.tscn").instantiate() as ExperienceOrb
+	orb.experience_value = stats.experience_reward
+	orb.position = position + Vector2(0, -8)
+	get_parent().add_child.call_deferred(orb)

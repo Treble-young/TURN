@@ -4,6 +4,7 @@
 
 [resource]
 script = ExtResource("1")
+experience_reward = 6
 display_name = "哥布林"
 max_health = 24.0
 damage = 8.0

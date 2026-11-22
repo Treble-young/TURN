@@ -1,7 +1,8 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/characters/player.gd" id="1"]
 [ext_resource type="SpriteFrames" path="res://assets/characters/hero/hero_frames.tres" id="2"]
+[ext_resource type="Script" path="res://scripts/characters/experience_progress.gd" id="3"]
 
 [sub_resource type="CircleShape2D" id="FootCollision"]
 radius = 13.0
@@ -20,3 +21,6 @@ scale = Vector2(0.3, 0.3)
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(0, -8)
 shape = SubResource("FootCollision")
+
+[node name="ExperienceProgress" type="Node" parent="."]
+script = ExtResource("3")

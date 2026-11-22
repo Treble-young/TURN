@@ -5,6 +5,7 @@ signal attack_started
 signal attack_finished
 signal health_changed(current: float, maximum: float)
 signal died
+signal leveled_up(new_level: int)
 
 @export var move_speed: float = 240.0
 @export var max_health: float = 100.0
@@ -16,12 +17,14 @@ var is_dead: bool = false
 var _hurt_timer: float = 0.0
 var _attack_hit: bool = false
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
+@onready var experience_progress: ExperienceProgress = $ExperienceProgress
 var is_attacking: bool = false
 var facing_direction: Vector2 = Vector2.LEFT
 var facing_right: bool = false
 
 func _ready() -> void:
 	health = max_health
+	experience_progress.leveled_up.connect(func(new_level: int): leveled_up.emit(new_level))
 	sprite.animation_finished.connect(_on_animation_finished)
 	sprite.frame_changed.connect(_on_attack_frame)
 	_play_animation(&"idle")
@@ -120,3 +123,7 @@ func take_damage(amount: float) -> void:
 		collision_layer = 0
 		collision_mask = 0
 		_play_animation(&"die")
+
+func gain_experience(amount: int) -> void:
+	if not is_dead:
+		experience_progress.add_experience(amount)
