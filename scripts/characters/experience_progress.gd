@@ -9,6 +9,7 @@ signal leveled_up(new_level: int)
 @export var requirement_increase: int = 5
 var level: int = 1
 var experience: int = 0
+var total_experience: int = 0
 
 func experience_required() -> int:
 	if level >= max_level:
@@ -16,7 +17,11 @@ func experience_required() -> int:
 	return maxi(1, first_level_requirement + (level - 1) * requirement_increase)
 
 func add_experience(amount: int) -> void:
-	if amount <= 0 or level >= max_level:
+	if amount <= 0:
+		return
+	total_experience += amount
+	if level >= max_level:
+		experience_changed.emit(level, experience, 0)
 		return
 	experience += amount
 	while level < max_level and experience >= experience_required():

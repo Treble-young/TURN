@@ -11,6 +11,7 @@ var attracted: bool = false
 var collected: bool = false
 
 func _ready() -> void:
+	add_to_group("experience_pickups")
 	target = get_tree().get_first_node_in_group("player") as EclipsePlayer
 	$AnimatedSprite2D.play(&"glow")
 

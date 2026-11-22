@@ -1,6 +1,6 @@
 extends Control
 
-const GAME_SCENE := "res://scenes/preview/character_preview.tscn"
+const GAME_SCENE := "res://scenes/expedition/route_map.tscn"
 
 @onready var start_button: Button = $Center/Menu/Buttons/StartGame
 
@@ -45,6 +45,7 @@ func _apply_theme() -> void:
 
 func _on_start_game_pressed() -> void:
 	start_button.disabled = true
+	Expedition.start_run()
 	var result := get_tree().change_scene_to_file(GAME_SCENE)
 	if result != OK:
 		start_button.disabled = false
