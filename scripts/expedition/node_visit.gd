@@ -62,12 +62,16 @@ func _refresh() -> void:
 	body.add_child(UI.label(INTRO[kind]))
 	match kind:
 		Expedition.Kind.SHOP:
+			if Expedition.relics.has("merchant_pass"):
+				body.add_child(UI.label("行商契约生效 · 商品七折", 16, UI.GOLD))
 			for id in Expedition.offers:
 				_item_row(id, true)
 			if not Expedition.report.is_empty():
 				body.add_child(UI.label(Expedition.report, 15, UI.GOLD))
 			body.add_child(UI.action("离开商人", _leave_shop))
 		Expedition.Kind.REST:
+			if Expedition.rest_entry_healed > 0.0:
+				body.add_child(UI.label("营火药囊已恢复 %d 点生命。" % roundi(Expedition.rest_entry_healed), 16, UI.GOLD))
 			body.add_child(UI.label("本次休息可恢复 %d 点生命。" % roundi(Expedition.rest_heal_amount()), 16, UI.GOLD))
 			body.add_child(UI.action("休息", _rest))
 		Expedition.Kind.ENCOUNTER:
@@ -84,10 +88,13 @@ func _item_row(id: String, for_sale: bool) -> void:
 	var item: Dictionary = Expedition.ITEMS[id]
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
-	var description := UI.label("%s\n%s" % [item["name"], item["effect"]], 16)
+	var name: String = item["name"]
+	if item.get("rare", false):
+		name += " · 稀有"
+	var description := UI.label("%s\n%s" % [name, item["effect"]], 16)
 	description.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(description)
-	var price: int = item["price"]
+	var price := Expedition.shop_price(id)
 	var button := UI.action("购买 · %d 金币" % price, _buy.bind(id), Expedition.gold < price) if for_sale else UI.action("领取", _wish.bind(id))
 	button.custom_minimum_size.x = 142
 	row.add_child(button)

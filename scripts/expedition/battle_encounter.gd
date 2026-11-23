@@ -4,6 +4,7 @@ const BOSS_NAME := "深沼首领"
 const ENEMY_STATS := {
 	"slime_small": preload("res://assets/enemies/slime_small.tres"),
 	"goblin": preload("res://assets/enemies/goblin.tres"),
+	"goblin_stone_thrower": preload("res://assets/enemies/goblin_stone_thrower.tres"),
 	"slime_medium": preload("res://assets/enemies/slime_medium.tres"),
 	"slime_large": preload("res://assets/enemies/slime_large.tres"),
 }

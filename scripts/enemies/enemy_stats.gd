@@ -8,6 +8,7 @@ extends Resource
 @export var move_speed: float = 100.0
 @export var attack_range: float = 42.0
 @export var attack_interval: float = 1.3
+@export var throws_stones: bool = false
 @export var visual_scale: float = 0.42
 @export var body_radius: float = 14.0
 @export_file("*.tres") var frames_path: String

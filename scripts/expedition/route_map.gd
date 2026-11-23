@@ -34,7 +34,9 @@ var travel_controls: VBoxContainer
 var selected := Vector2i(-1, -1)
 var node_buttons: Dictionary = {}
 var header_stats: Label
-var inventory: Label
+var backpack_button: Button
+var backpack: PanelContainer
+var backpack_items: VBoxContainer
 var paper_style: StyleBoxTexture
 var tracking_drag := false
 var dragging := false
@@ -54,6 +56,7 @@ func _ready() -> void:
 	_build_header()
 	_build_canvas()
 	_build_sidebar()
+	_build_backpack()
 	_build_nodes()
 	_update_details()
 	_scroll_to_frontier.call_deferred()
@@ -64,6 +67,7 @@ func _draw() -> void:
 
 func _build_header() -> void:
 	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 14)
 	add_child(row)
 	row.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	row.offset_left = 26
@@ -83,6 +87,10 @@ func _build_header() -> void:
 	header_stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	header_stats.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(header_stats)
+	backpack_button = UI.action("背包", _toggle_backpack)
+	backpack_button.custom_minimum_size = Vector2(100, 35)
+	backpack_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(backpack_button)
 
 func _build_canvas() -> void:
 	scroll = ScrollContainer.new()
@@ -140,10 +148,68 @@ func _build_sidebar() -> void:
 	travel_controls = VBoxContainer.new()
 	travel_controls.add_theme_constant_override("separation", 6)
 	body.add_child(travel_controls)
+
+func _build_backpack() -> void:
+	backpack = PanelContainer.new()
+	add_child(backpack)
+	backpack.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	backpack.offset_left = -411
+	backpack.offset_right = -26
+	backpack.offset_top = HEADER_HEIGHT + 8
+	backpack.offset_bottom = HEADER_HEIGHT + 390
+	var style := UI.box(UI.PANEL, UI.GOLD, 1, 6)
+	UI.set_margins(style, 18, 14)
+	backpack.add_theme_stylebox_override("panel", style)
+	var body := VBoxContainer.new()
+	body.add_theme_constant_override("separation", 10)
+	backpack.add_child(body)
+	var title_row := HBoxContainer.new()
+	body.add_child(title_row)
+	var title := UI.label("随身物品", 23, UI.GOLD)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title_row.add_child(title)
+	var close_button := UI.action("关闭", backpack.hide)
+	close_button.custom_minimum_size = Vector2(58, 30)
+	title_row.add_child(close_button)
 	body.add_child(HSeparator.new())
-	body.add_child(UI.label("随身物品", 17, UI.GOLD))
-	inventory = UI.label("", 15, UI.SOFT)
-	body.add_child(inventory)
+	var item_scroll := ScrollContainer.new()
+	item_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	item_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body.add_child(item_scroll)
+	backpack_items = VBoxContainer.new()
+	backpack_items.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	backpack_items.add_theme_constant_override("separation", 9)
+	item_scroll.add_child(backpack_items)
+	backpack.hide()
+
+func _toggle_backpack() -> void:
+	backpack.visible = not backpack.visible
+	_refresh_backpack()
+
+func _refresh_backpack() -> void:
+	var total := 0
+	for count: int in Expedition.relics.values():
+		total += count
+	backpack_button.text = "背包 · %d" % total
+	if not backpack.visible:
+		return
+	for child in backpack_items.get_children():
+		backpack_items.remove_child(child)
+		child.queue_free()
+	if Expedition.relics.is_empty():
+		backpack_items.add_child(UI.label("还没有获得物品", 16, UI.SOFT))
+		return
+	for id: String in Expedition.relics:
+		var item: Dictionary = Expedition.ITEMS[id]
+		var caption := "%s ×%d" % [item["name"], Expedition.relics[id]]
+		if item.get("rare", false):
+			caption += " · 稀有"
+		var lines := VBoxContainer.new()
+		lines.add_theme_constant_override("separation", 2)
+		lines.add_child(UI.label(caption, 17, UI.GOLD))
+		lines.add_child(UI.label(item["effect"], 15, UI.SOFT))
+		backpack_items.add_child(lines)
 
 func _input(event: InputEvent) -> void:
 	if not is_instance_valid(scroll):
@@ -151,7 +217,10 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
 			var on_scrollbar := scroll.get_v_scroll_bar().get_global_rect().has_point(event.position)
-			tracking_drag = scroll.get_global_rect().has_point(event.position) and not on_scrollbar
+			var on_backpack := backpack.visible and backpack.get_global_rect().has_point(event.position)
+			if backpack.visible and not on_backpack and not backpack_button.get_global_rect().has_point(event.position):
+				backpack.hide()
+			tracking_drag = scroll.get_global_rect().has_point(event.position) and not on_scrollbar and not on_backpack
 			dragging = false
 			drag_origin = event.position
 			drag_scroll_origin = scroll.scroll_vertical
@@ -304,7 +373,7 @@ func _update_details() -> void:
 		Expedition.floor_number, Expedition.FLOOR_COUNT, roundi(Expedition.health), roundi(Expedition.max_health()),
 		Expedition.gold, Expedition.level, Expedition.total_experience, Expedition.run_seed,
 	]
-	inventory.text = UI.inventory_text()
+	_refresh_backpack()
 	for section in [details, travel_controls]:
 		for child in section.get_children():
 			section.remove_child(child)
@@ -331,10 +400,12 @@ func _preview_node() -> void:
 	if Expedition.is_battle(kind):
 		_preview_battle(kind)
 	elif kind == Expedition.Kind.REST:
-		var restore := roundi(Expedition.rest_heal_amount())
+		var restore := roundi(Expedition.rest_heal_amount(true))
 		var limit := roundi(Expedition.REST_HEAL_FRACTION * 100.0)
 		var outcome := "当前可恢复 %d 点生命。" % restore if restore > 0 else "当前生命已满。"
-		details.add_child(UI.label("回复量按最大生命值的 %d%% 计算。\n%s" % [limit, outcome], 16, UI.GOLD))
+		details.add_child(UI.label("休息可恢复最大生命值的 %d%%。\n%s" % [limit, outcome], 16, UI.GOLD))
+		if Expedition.relics.has("camp_kit"):
+			details.add_child(UI.label("营火药囊：入场额外恢复最多 %d 点生命，上面已计入。" % int(Expedition.REST_ENTRY_BONUS), 15, UI.SOFT))
 	travel_controls.show()
 	if Expedition.visited.has(selected):
 		travel_controls.add_child(UI.label("已经过此节点", 16, UI.SOFT))

@@ -4,6 +4,7 @@ extends CharacterBody2D
 signal attack_started
 signal attack_finished
 signal health_changed(current: float, maximum: float)
+signal shield_changed(current: float)
 signal died
 signal leveled_up(new_level: int)
 signal form_changed(new_form: int)
@@ -40,8 +41,10 @@ var charge_time: float = 0.0
 var _charge_release_requested: bool = false
 var _light_shot_damage: float = 0.0
 @export_range(0, 100) var experience_efficiency_percent: int = 100
+var experience_attraction_multiplier := 1.0
 var experience_remainder: int = 0
 var health: float
+var shield := 0.0
 var is_dead: bool = false
 var _hurt_timer: float = 0.0
 var _attack_hit: bool = false
@@ -260,10 +263,17 @@ func _on_attack_frame() -> void:
 		if offset.length() <= attack_range + enemy.stats.body_radius and (offset.length() < 25 or direction.dot(offset.normalized()) >= 0.0):
 			enemy.take_damage(attack_damage * ([1.0, 1.1, 1.5][clampi(combo_stage - 1, 0, 2)] if current_form == Form.SHADOW else 1.0))
 
+func set_shield(value: float) -> void:
+	shield = maxf(0.0, value)
+	shield_changed.emit(shield)
+
 func take_damage(amount: float) -> void:
 	if is_dead or combat_locked or is_transforming or _hurt_timer > 0 or amount <= 0:
 		return
-	health = maxf(0.0, health - amount)
+	var absorbed := minf(amount, shield)
+	if absorbed > 0.0:
+		set_shield(shield - absorbed)
+	health = maxf(0.0, health - (amount - absorbed))
 	_hurt_timer = hurt_invulnerability
 	health_changed.emit(health, max_health)
 	if health <= 0:

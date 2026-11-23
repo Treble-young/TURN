@@ -24,7 +24,7 @@ func _physics_process(delta: float) -> void:
 		return
 	var destination := target.global_position + Vector2(0, -12)
 	var distance := global_position.distance_to(destination)
-	if distance <= attraction_radius:
+	if distance <= attraction_radius * target.experience_attraction_multiplier:
 		attracted = true
 	if not attracted:
 		return

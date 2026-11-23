@@ -55,9 +55,3 @@ static func action(value: String, callback: Callable, disabled: bool = false) ->
 	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	button.pressed.connect(callback)
 	return button
-
-static func inventory_text() -> String:
-	var items := PackedStringArray()
-	for id in Expedition.relics:
-		items.append("%s ×%d" % [Expedition.ITEMS[id]["name"], Expedition.relics[id]])
-	return "  ·  ".join(items) if not items.is_empty() else "还没有物品"

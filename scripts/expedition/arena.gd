@@ -6,6 +6,8 @@ const MAP := "res://scenes/expedition/route_map.tscn"
 const FIELD := Rect2(40, 107, 1072, 498)
 const GOLD := Color("#e5c082")
 const TEXT := Color("#e6ded3")
+const START_SHIELD_RATIO := 0.30
+const FORM_SHIELD_RATIO := 0.10
 const SPAWN_POINTS := [
 	Vector2(230, 216), Vector2(922, 216), Vector2(228, 507),
 	Vector2(925, 507), Vector2(578, 200), Vector2(578, 519),
@@ -16,6 +18,7 @@ const SPAWN_POINTS := [
 var font: SystemFont
 var status_label: Label
 var health_label: Label
+var shield_label: Label
 var wave_label: Label
 var experience_bar: ProgressBar
 var progress: ExperienceProgress
@@ -48,6 +51,7 @@ func _ready() -> void:
 	player.move_speed = Expedition.speed()
 	player.health = Expedition.health
 	player.experience_efficiency_percent = Expedition.EXPERIENCE_PERCENT[Expedition.difficulty]
+	player.experience_attraction_multiplier = 1.5 if Expedition.relics.has("soul_lantern") else 1.0
 	player.experience_remainder = Expedition.experience_remainder
 	var library = load("res://assets/maps/map_library.tres")
 	var definition = library.definition_for(Expedition.floor_number, Expedition.stage, Expedition.lane)
@@ -80,6 +84,10 @@ func _ready() -> void:
 	if definition != null:
 		_add_label(definition.display_name, Vector2(42, 82), Vector2(650, 22), 14, TEXT)
 	player.health_changed.connect(_update_health)
+	player.shield_changed.connect(_update_shield)
+	if Expedition.relics.has("eclipse_shield"):
+		player.form_changed.connect(_replenish_shield)
+		player.set_shield(player.max_health * START_SHIELD_RATIO)
 	player.died.connect(_defeat)
 	progress.experience_changed.connect(_update_experience)
 	progress.leveled_up.connect(_level_up)
@@ -156,6 +164,10 @@ func _level_up(new_level: int) -> void:
 	player.attack_damage = Expedition.damage(new_level)
 	_update_health(player.health, player.max_health)
 
+func _replenish_shield(_form: int) -> void:
+	if not collecting and not finished and not player.is_dead:
+		player.set_shield(player.shield + player.health * FORM_SHIELD_RATIO)
+
 func _victory() -> void:
 	finished = true
 	Expedition.experience_remainder = player.experience_remainder
@@ -189,6 +201,8 @@ func _build_hud() -> void:
 	_add_label(title, Vector2(40, 16), Vector2(304, 39), 25, GOLD)
 	wave_label = _add_label("", Vector2(42, 58), Vector2(300, 26), 16, TEXT)
 	health_label = _add_label("", Vector2(371, 19), Vector2(215, 34), 20, TEXT)
+	shield_label = _add_label("", Vector2(371, 55), Vector2(215, 22), 16, Color("#a6d8ec"))
+	shield_label.hide()
 	status_label = _add_label("", Vector2(632, 19), Vector2(478, 34), 19, TEXT)
 	experience_bar = ProgressBar.new()
 	experience_bar.position = Vector2(632, 59)
@@ -218,6 +232,10 @@ func _add_label(value: String, at: Vector2, area: Vector2, font_size: int, color
 func _update_health(current: float, maximum: float) -> void:
 	health_label.text = "生命 %d / %d" % [roundi(current), roundi(maximum)]
 
+func _update_shield(current: float) -> void:
+	shield_label.visible = not finished
+	shield_label.text = "护盾 %.1f" % current
+
 func _update_experience(level: int, current: int, required: int) -> void:
 	status_label.text = "等级 %d    经验 %d / %d" % [level, current, required] if required > 0 else "等级 %d    已满级" % level
 	experience_bar.max_value = maxf(1.0, required)
@@ -226,6 +244,7 @@ func _update_experience(level: int, current: int, required: int) -> void:
 func _result(title: String, message: String, action: String) -> void:
 	MusicManager.set_context(&"non_combat")
 	player.lock_combat()
+	player.set_shield(0.0)
 	var dim := ColorRect.new()
 	dim.color = Color(0.06, 0.05, 0.08, 0.76)
 	dim.size = Vector2(1152, 648)

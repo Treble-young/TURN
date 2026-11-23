@@ -21,6 +21,11 @@ const BASE_SPEED := 240.0
 const HEALTH_PER_LEVEL := 4.0
 const DAMAGE_PER_LEVEL := 2.0
 const REST_HEAL_FRACTION := 0.35
+const REST_ENTRY_BONUS := 12.0
+const SHOP_DISCOUNT := 0.70
+const ENEMY_HEALTH_WITH_CURSE := 0.85
+const COMMON_ITEM_WEIGHT := 10
+const RARE_ITEM_WEIGHT := 2
 const NORMAL_DROP := 0.12
 const ELITE_DROP := 0.30
 const DROP_PER_XP := 0.0015
@@ -40,9 +45,18 @@ const ITEMS := {
 	"light_pierce": {"name": "贯光符印", "effect": "光刃可额外命中 1 个敌人（可叠加）", "price": 24},
 	"light_blade": {"name": "辉光刻印", "effect": "光刃强化：伤害 +50%，最多命中三个敌人（重复获取不叠加）", "price": 28},
 	"blade": {"name": "磨锋石", "effect": "攻击伤害 +4", "price": 18},
-	"heart": {"name": "琥珀护符", "effect": "生命上限 +12，并回复 12 生命", "price": 22},
+	"heart": {"name": "琥珀护符", "effect": "生命上限 +12，并回复 12 生命", "price": 22, "max_health": 12, "heal_on_acquire": 12},
 	"boots": {"name": "巡路靴", "effect": "移动速度 +20", "price": 17},
 	"coin": {"name": "旧王钱币", "effect": "每场胜利额外获得 3 金币", "price": 16},
+	"victory_badge": {"name": "凯旋徽章", "effect": "战斗胜利获得的金币 +20%，向上取整。", "price": 22, "unique": true},
+	"lesser_vitality": {"name": "青芽符", "effect": "生命上限 +8（可叠加）", "price": 12, "max_health": 8},
+	"greater_vitality": {"name": "生息符", "effect": "生命上限 +16（可叠加）", "price": 20, "max_health": 16, "weight": 8},
+	"supreme_vitality": {"name": "长生符", "effect": "生命上限 +28（可叠加）", "price": 30, "max_health": 28, "weight": 6},
+	"eclipse_shield": {"name": "日蚀护镜", "effect": "开战获得最大生命 30% 的护盾。每次切换光影形态补充当时生命 10% 的护盾，战斗结束后清空。", "price": 32, "rare": true, "unique": true},
+	"merchant_pass": {"name": "行商契约", "effect": "持有时，商店内所有商品按原价七折出售。", "price": 30, "rare": true, "unique": true},
+	"camp_kit": {"name": "营火药囊", "effect": "进入休憩之所时立刻额外恢复 12 点生命。", "price": 20, "unique": true},
+	"frailty_seal": {"name": "衰弱印记", "effect": "战斗中所有敌人的最大生命值降低 15%。", "price": 27, "unique": true},
+	"soul_lantern": {"name": "引魂灯", "effect": "经验球吸附范围 +50%。", "price": 19, "unique": true},
 }
 
 var rng := RandomNumberGenerator.new()
@@ -58,6 +72,7 @@ var level := 1
 var experience := 0
 var total_experience := 0
 var relics: Dictionary = {}
+var rest_entry_healed := 0.0
 var visited: Array[Vector2i] = []
 var offers: Array[String] = []
 var current_kind: int = -1
@@ -93,6 +108,7 @@ func start_run(requested_seed: int = -1, selected_difficulty: int = Difficulty.S
 	experience = 0
 	total_experience = 0
 	relics.clear()
+	rest_entry_healed = 0.0
 	visited.clear()
 	offers.clear()
 	current_kind = -1
@@ -206,13 +222,17 @@ func enter_node(to_stage: int, to_lane: int) -> bool:
 	current_kind = current_map()[stage][lane]
 	node_pending = true
 	report = ""
+	rest_entry_healed = 0.0
 	offers.clear()
 	if current_kind == Kind.SHOP or current_kind == Kind.WISH:
-		var choices: Array = ITEMS.keys()
-		_shuffle(choices)
 		var count := 3 if current_kind == Kind.SHOP else 2
-		for index in count:
-			offers.append(choices[index])
+		for _index in count:
+			var id := _roll_item(offers)
+			if id.is_empty():
+				break
+			offers.append(id)
+	elif current_kind == Kind.REST and relics.has("camp_kit"):
+		rest_entry_healed = _heal(REST_ENTRY_BONUS)
 	return true
 
 func is_battle(kind: int) -> bool:
@@ -221,7 +241,11 @@ func is_battle(kind: int) -> bool:
 func max_health(at_level: int = 0) -> float:
 	if at_level == 0:
 		at_level = level
-	return BASE_HEALTH + (at_level - 1) * HEALTH_PER_LEVEL + 12.0 * relics.get("heart", 0)
+	var maximum := BASE_HEALTH + (at_level - 1) * HEALTH_PER_LEVEL
+	for id: String in relics:
+		var item: Dictionary = ITEMS[id]
+		maximum += float(item.get("max_health", 0)) * int(relics[id])
+	return maximum
 
 func damage(at_level: int) -> float:
 	return BASE_DAMAGE + (at_level - 1) * DAMAGE_PER_LEVEL + 4.0 * relics.get("blade", 0)
@@ -235,35 +259,70 @@ func drop_chance(kind: int) -> float:
 	var base := ELITE_DROP if kind == Kind.ELITE else NORMAL_DROP
 	return base + minf(MAX_XP_DROP_BONUS, total_experience * DROP_PER_XP)
 
-func _award_item(id: String) -> void:
+func _roll_item(excluded: Array[String] = []) -> String:
+	var weights := {}
+	var total_weight := 0
+	for id: String in ITEMS:
+		var item: Dictionary = ITEMS[id]
+		if excluded.has(id) or (item.get("unique", false) and relics.has(id)):
+			continue
+		var weight: int = RARE_ITEM_WEIGHT if item.get("rare", false) else item.get("weight", COMMON_ITEM_WEIGHT)
+		weights[id] = weight
+		total_weight += weight
+	if total_weight <= 0:
+		return ""
+	var roll := rng.randi_range(1, total_weight)
+	for id: String in weights:
+		roll -= weights[id]
+		if roll <= 0:
+			return id
+	return ""
+
+func _heal(amount: float) -> float:
+	var before := health
+	health = minf(max_health(), health + amount)
+	return health - before
+
+func _award_item(id: String) -> String:
+	var item: Dictionary = ITEMS[id]
 	relics[id] = int(relics.get(id, 0)) + 1
-	if id == "heart":
-		health = minf(max_health(), health + 12.0)
+	var instant_heal: float = item.get("heal_on_acquire", 0.0)
+	if instant_heal > 0.0:
+		_heal(instant_heal)
+	return item["effect"]
+
+func shop_price(id: String) -> int:
+	var base_price: int = ITEMS[id]["price"]
+	return roundi(base_price * SHOP_DISCOUNT) if relics.has("merchant_pass") else base_price
+
+func enemy_health_modifier() -> float:
+	return ENEMY_HEALTH_WITH_CURSE if active and node_pending and is_battle(current_kind) and relics.has("frailty_seal") else 1.0
 
 func buy(id: String) -> bool:
 	if not node_pending or current_kind != Kind.SHOP or not offers.has(id):
 		return false
-	var price: int = ITEMS[id]["price"]
+	var price := shop_price(id)
 	if gold < price:
 		return false
 	gold -= price
 	offers.erase(id)
-	_award_item(id)
-	report = "购入%s · %s" % [ITEMS[id]["name"], ITEMS[id]["effect"]]
+	report = "购入%s · %s" % [ITEMS[id]["name"], _award_item(id)]
 	return true
 
 func complete_shop() -> void:
 	if node_pending and current_kind == Kind.SHOP:
 		node_pending = false
 
-func rest_heal_amount() -> float:
-	return minf(max_health() - health, ceilf(max_health() * REST_HEAL_FRACTION))
+func rest_heal_amount(include_entry_bonus: bool = false) -> float:
+	var amount := ceilf(max_health() * REST_HEAL_FRACTION)
+	if include_entry_bonus and relics.has("camp_kit"):
+		amount += REST_ENTRY_BONUS
+	return minf(max_health() - health, amount)
 
 func complete_rest() -> void:
 	if node_pending and current_kind == Kind.REST:
-		var healed := rest_heal_amount()
-		health += healed
-		report = "休整完毕 · 回复 %d 生命" % roundi(healed)
+		var healed := _heal(rest_heal_amount())
+		report = "休整完毕 · 共回复 %d 生命" % roundi(rest_entry_healed + healed)
 		node_pending = false
 
 func complete_encounter(take_risk: bool) -> void:
@@ -274,8 +333,7 @@ func complete_encounter(take_risk: bool) -> void:
 		gold += 18
 		report = "取回钱袋 · 获得 18 金币，失去 12 生命"
 	elif not take_risk:
-		var healed := minf(max_health() - health, 8.0)
-		health += healed
+		var healed := _heal(8.0)
 		report = "接受旅人的药膏 · 回复 %d 生命" % roundi(healed)
 	else:
 		return
@@ -283,8 +341,7 @@ func complete_encounter(take_risk: bool) -> void:
 
 func complete_wish(id: String) -> void:
 	if node_pending and current_kind == Kind.WISH and offers.has(id):
-		_award_item(id)
-		report = "秘藏之地 · 获得%s，%s" % [ITEMS[id]["name"], ITEMS[id]["effect"]]
+		report = "秘藏之地 · 获得%s，%s" % [ITEMS[id]["name"], _award_item(id)]
 		node_pending = false
 
 func win_battle(remaining_health: float, progress: ExperienceProgress) -> String:
@@ -300,13 +357,14 @@ func win_battle(remaining_health: float, progress: ExperienceProgress) -> String
 	elif current_kind == Kind.BOSS:
 		base_gold = 32
 	var earned := base_gold + 2 * (floor_number - 1) + 3 * int(relics.get("coin", 0))
+	if relics.has("victory_badge"):
+		earned = ceili(earned * 1.20)
 	gold += earned
 	var result := "获得 %d 金币" % earned
 	if rng.randf() < drop_chance(current_kind) or current_kind == Kind.BOSS:
-		var item_ids: Array = ITEMS.keys()
-		var id: String = item_ids[rng.randi_range(0, item_ids.size() - 1)]
-		_award_item(id)
-		result += "\n获得%s · %s" % [ITEMS[id]["name"], ITEMS[id]["effect"]]
+		var id := _roll_item()
+		if not id.is_empty():
+			result += "\n获得%s · %s" % [ITEMS[id]["name"], _award_item(id)]
 	var defeated_boss := current_kind == Kind.BOSS
 	node_pending = false
 	current_kind = -1

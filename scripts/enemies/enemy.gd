@@ -2,6 +2,8 @@ class_name EclipseEnemy
 extends CharacterBody2D
 
 const SPLIT_OFFSETS := [-1, 1]
+const STONE_PROJECTILE := preload("res://scripts/projectiles/goblin_stone.gd")
+const STONE_ORIGIN_OFFSET := Vector2(0, -8)
 
 @export var stats: EnemyStats
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
@@ -14,7 +16,7 @@ var target: Node2D
 
 func _ready() -> void:
 	stats = stats.duplicate() as EnemyStats
-	stats.max_health *= Expedition.ENEMY_MULTIPLIERS[Expedition.difficulty]
+	stats.max_health *= Expedition.ENEMY_MULTIPLIERS[Expedition.difficulty] * Expedition.enemy_health_modifier()
 	stats.damage *= Expedition.ENEMY_MULTIPLIERS[Expedition.difficulty]
 	health = stats.max_health
 	sprite.sprite_frames = load(stats.frames_path)
@@ -47,6 +49,8 @@ func _physics_process(delta: float) -> void:
 			is_attacking = true
 			attack_hit = false
 			cooldown = stats.attack_interval
+			if stats.throws_stones:
+				sprite.flip_h = difference.x > 0.0
 			sprite.play(&"attack")
 	else:
 		velocity = difference.normalized() * stats.move_speed
@@ -55,12 +59,25 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 func _frame_changed() -> void:
-	if is_dead or not is_attacking or attack_hit or sprite.frame < 1:
+	var release_frame := 2 if stats.throws_stones else 1
+	if is_dead or not is_attacking or attack_hit or sprite.frame < release_frame:
 		return
 	attack_hit = true
-	if is_instance_valid(target) and not target.is_dead:
-		if global_position.distance_to(target.global_position) <= stats.attack_range + 12.0:
-			target.take_damage(stats.damage)
+	if not is_instance_valid(target) or target.is_dead:
+		return
+	if stats.throws_stones:
+		_throw_stone(target.global_position + STONE_ORIGIN_OFFSET)
+	elif global_position.distance_to(target.global_position) <= stats.attack_range + 12.0:
+		target.take_damage(stats.damage)
+
+func _throw_stone(aim_point: Vector2) -> void:
+	var origin := global_position + STONE_ORIGIN_OFFSET
+	sprite.flip_h = aim_point.x > origin.x
+	var stone := STONE_PROJECTILE.new()
+	stone.destination = aim_point
+	stone.damage = stats.damage
+	get_parent().add_child(stone)
+	stone.global_position = origin
 
 func take_damage(amount: float) -> void:
 	if is_dead or amount <= 0:

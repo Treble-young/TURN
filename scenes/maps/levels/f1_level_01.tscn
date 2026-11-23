@@ -26,7 +26,14 @@ position = Vector2(576, 385)
 position = Vector2(230, 216)
 script = ExtResource("3")
 enemy_kind = "goblin"
-count = 2
+count = 1
+wave = 1
+
+[node name="StoneThrower" type="Marker2D" parent="EnemySpawns"]
+position = Vector2(274, 219)
+script = ExtResource("3")
+enemy_kind = "goblin_stone_thrower"
+count = 1
 wave = 1
 
 [node name="Spawn2" type="Marker2D" parent="EnemySpawns"]
