@@ -1,0 +1,19 @@
+Use case: stylized-concept.
+Asset type: fantasy game terrain tileset sprite atlas.
+Create ONE image containing all EIGHT terrain tiles in an EXACT 4-column by 2-row regular atlas, transparent background with clear equal transparent gutters separating every tile and outer margins. Landscape canvas.
+CRITICAL GEOMETRY: Each tile is a complete AXIS-ALIGNED SQUARE with horizontal top/bottom edges and vertical left/right edges, identical size. NOT diamonds, NOT trapezoids, NOT isometric parallelograms. Every square is completely filled with terrain right up to its four straight edges. No protrusions into transparent gutters. No thick sides, no block extrusion.
+CAMERA: Oblique overhead viewing angle is expressed ONLY through hand-painted surface details (grass blades, flowers, reeds, rocks show tops and slight front faces). The tile boundary stays an axis-aligned square. No horizon or perspective convergence.
+STYLE: otherworldly fantasy HAND-PAINTED game art, rich painterly brush textures, imaginative organic forms, harmonious palette, clearly readable material differences, polished 2D environment art. Shared gentle upper-left illumination, consistent scale and perspective. Sparse low-profile details so game units can be read on top.
+ORDER left to right:
+TOP ROW:
+1 ordinary grassland: lush emerald and moss green turf, scattered short grass tufts.
+2 flower-dotted grassland: matching green turf with small delicate clusters of white yellow and pink fantasy wildflowers.
+3 wasteland: dry ochre brown barren earth, fine cracks, scattered little stones, sparse dead grass.
+4 corrupted grassland: dark sickly teal-purple grass, violet creeping corruption veins, subtle unnatural purple tufts.
+BOTTOM ROW:
+5 swamp: olive marsh ground, patches of shallow murky green water, sparse small reeds.
+6 snow: white and pale ice-blue snowy ground, subtle soft drifts and frost details.
+7 basalt: charcoal blue-gray volcanic rock, angular plate texture and dark fissures.
+8 lava: glowing orange-red molten lava with yellow hot currents and scattered dark basalt crust.
+Each tile surface should be distributed naturally across its square rather than a centered island or vignette; edge colors suitable for repeated same-terrain tiling. All eight squares same dimensions and crisp boundaries.
+NO text, NO labels, NO numbers, NO watermark, NO grid lines, NO frames, NO drop shadows outside squares, NO trees, NO buildings, NO characters. True alpha transparency in all gutters and outside the eight squares.

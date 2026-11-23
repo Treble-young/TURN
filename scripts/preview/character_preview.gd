@@ -9,6 +9,7 @@ var level_notice: Label
 var level_notice_time: float = 0.0
 
 func _ready() -> void:
+	MusicManager.set_context(&"combat")
 	y_sort_enabled = true
 	health_label = Label.new()
 	health_label.position = Vector2(32, 94)

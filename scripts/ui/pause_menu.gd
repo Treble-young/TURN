@@ -1,5 +1,8 @@
 extends CanvasLayer
 
+signal closed
+@export var main_menu_mode: bool = false
+
 var panel: Control
 var resume_button: Button
 var window_options: OptionButton
@@ -12,6 +15,8 @@ func _ready() -> void:
 	panel.hide()
 
 func _unhandled_key_input(event: InputEvent) -> void:
+	if main_menu_mode and not panel.visible:
+		return
 	if event is InputEventKey and event.keycode == KEY_ESCAPE and event.pressed and not event.echo:
 		if panel.visible:
 			resume_game()
@@ -29,6 +34,7 @@ func resume_game() -> void:
 	panel.hide()
 	get_tree().paused = false
 	get_viewport().gui_release_focus()
+	closed.emit()
 
 func _build_menu() -> void:
 	panel = Control.new()
@@ -65,7 +71,7 @@ func _build_menu() -> void:
 	list.add_theme_constant_override("separation", 16)
 	card.add_child(list)
 	var title := Label.new()
-	title.text = "游戏暂停"
+	title.text = "选项设置" if main_menu_mode else "游戏暂停"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 30)
 	title.add_theme_color_override("font_color", Color("e5c68b"))
@@ -93,12 +99,13 @@ func _build_menu() -> void:
 		hint.add_theme_color_override("font_color", Color("e5c68b"))
 		list.add_child(hint)
 	resume_button = Button.new()
-	resume_button.text = "继续游戏（Esc）"
+	resume_button.text = "返回（Esc）" if main_menu_mode else "继续游戏（Esc）"
 	resume_button.custom_minimum_size.y = 46
 	resume_button.pressed.connect(resume_game)
 	list.add_child(resume_button)
 	var main_menu_button := Button.new()
 	main_menu_button.name = "ReturnToMainMenu"
+	main_menu_button.visible = not main_menu_mode
 	main_menu_button.text = "返回主界面"
 	main_menu_button.custom_minimum_size.y = 46
 	main_menu_button.pressed.connect(_return_to_main_menu)

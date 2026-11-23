@@ -25,11 +25,15 @@ var intermission := -1.0
 var collecting := false
 var finished := false
 var initial_experience := 0
+var battle_map: EditableBattleMap
+var active_field := FIELD
+var follow_camera: BattleFollowCamera
 
 func _ready() -> void:
 	if not Expedition.active or not Expedition.node_pending or not Expedition.is_battle(Expedition.current_kind):
 		get_tree().change_scene_to_file.bind(MAP).call_deferred()
 		return
+	MusicManager.set_context(&"combat")
 	y_sort_enabled = true
 	progress = player.experience_progress
 	progress.level = Expedition.level
@@ -43,20 +47,53 @@ func _ready() -> void:
 	player.light_blade_extra_hits = int(Expedition.relics.get("light_pierce", 0))
 	player.move_speed = Expedition.speed()
 	player.health = Expedition.health
-	waves = ENCOUNTER.waves_for(Expedition.current_kind, Expedition.floor_number)
+	player.experience_efficiency_percent = Expedition.EXPERIENCE_PERCENT[Expedition.difficulty]
+	player.experience_remainder = Expedition.experience_remainder
+	var library = load("res://assets/maps/map_library.tres")
+	var definition = library.definition_for(Expedition.floor_number, Expedition.stage, Expedition.lane)
+	var map_scene: PackedScene = library.map_for(Expedition.current_kind, Expedition.floor_number, Expedition.stage, Expedition.lane)
+	if get_tree().has_meta("battle_map_override"):
+		map_scene = load(get_tree().get_meta("battle_map_override"))
+		get_tree().remove_meta("battle_map_override")
+	if map_scene == null:
+		push_error("当前节点未分配有效关卡。")
+		get_tree().change_scene_to_file.bind(MAP).call_deferred()
+		return
+	battle_map = map_scene.instantiate() as EditableBattleMap
+	add_child(battle_map)
+	active_field = battle_map.arena_bounds
+	player.global_position = battle_map.get_node("PlayerStart").global_position
+	player.global_position = player.global_position.clamp(active_field.position + Vector2(16, 32), active_field.end - Vector2(16, 12))
+	follow_camera = BattleFollowCamera.new()
+	follow_camera.name = "FollowCamera"
+	add_child(follow_camera)
+	follow_camera.configure(player, active_field, battle_map.camera_zoom, battle_map.camera_follow_speed)
+	var wave_count := battle_map.configured_wave_count(Expedition.current_kind)
+	waves = []
+	for number in range(wave_count):
+		var units: Array = []
+		for marker in battle_map.spawn_markers(Expedition.current_kind):
+			if marker.wave == number + 1:
+				for index in marker.count: units.append(marker.enemy_kind)
+		waves.append(units)
 	_build_hud()
+	if definition != null:
+		_add_label(definition.display_name, Vector2(42, 82), Vector2(650, 22), 14, TEXT)
 	player.health_changed.connect(_update_health)
 	player.died.connect(_defeat)
 	progress.experience_changed.connect(_update_experience)
 	progress.leveled_up.connect(_level_up)
 	_update_health(player.health, player.max_health)
 	_update_experience(progress.level, progress.experience, progress.experience_required())
-	_spawn_next_wave()
+	if waves.is_empty():
+		_victory()
+	else:
+		_spawn_next_wave()
 
 func _process(delta: float) -> void:
 	if not is_instance_valid(progress) or finished or player.is_dead or player.is_transforming:
 		return
-	player.position = player.position.clamp(FIELD.position + Vector2(16, 32), FIELD.end - Vector2(16, 12))
+	player.position = player.position.clamp(active_field.position + Vector2(16, 32), active_field.end - Vector2(16, 12))
 	if collecting:
 		var orbs := get_tree().get_nodes_in_group("experience_pickups")
 		for node in orbs:
@@ -82,12 +119,11 @@ func _process(delta: float) -> void:
 func _spawn_next_wave() -> void:
 	intermission = -1.0
 	wave_index += 1
-	var units: Array = waves[wave_index]
-	for index in units.size():
-		var spot: Vector2 = SPAWN_POINTS[(index + 3 * wave_index) % SPAWN_POINTS.size()]
-		if spot.distance_to(player.position) < 135.0:
-			spot = FIELD.get_center() * 2.0 - spot
-		_spawn(units[index], spot)
+	for marker in battle_map.spawn_markers(Expedition.current_kind):
+		if marker.wave != wave_index + 1:
+			continue
+		for spot in marker.spawn_positions():
+			_spawn(marker.enemy_kind, spot)
 	wave_label.text = "第 %d / %d 波" % [wave_index + 1, waves.size()]
 
 func _spawn(kind: String, spot: Vector2) -> void:
@@ -122,6 +158,7 @@ func _level_up(new_level: int) -> void:
 
 func _victory() -> void:
 	finished = true
+	Expedition.experience_remainder = player.experience_remainder
 	var result := Expedition.win_battle(player.health, progress)
 	var message := "%s\n拾取 %d 经验 · 等级 %d" % [result, progress.total_experience - initial_experience, progress.level]
 	_result("战斗胜利", message, "查看远征结果" if Expedition.won else "返回路线图")
@@ -133,6 +170,8 @@ func _defeat() -> void:
 
 func _draw() -> void:
 	draw_rect(Rect2(0, 0, 1152, 648), Color("#141721"))
+	if is_instance_valid(battle_map):
+		return
 	draw_rect(FIELD, Color("#252839"))
 	draw_rect(FIELD, Color("#75604c"), false, 2.0)
 	for x in range(74, 1100, 48):
@@ -185,6 +224,7 @@ func _update_experience(level: int, current: int, required: int) -> void:
 	experience_bar.value = current if required > 0 else 1.0
 
 func _result(title: String, message: String, action: String) -> void:
+	MusicManager.set_context(&"non_combat")
 	player.lock_combat()
 	var dim := ColorRect.new()
 	dim.color = Color(0.06, 0.05, 0.08, 0.76)

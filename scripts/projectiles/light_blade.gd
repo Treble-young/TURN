@@ -30,6 +30,11 @@ func _physics_process(delta: float) -> void:
 		return
 	var previous := global_position
 	var step := minf(speed * delta, remaining_distance)
+	var wall_query := PhysicsRayQueryParameters2D.create(previous, previous + direction * step, 4)
+	wall_query.hit_from_inside = true
+	var wall_hit := get_world_2d().direct_space_state.intersect_ray(wall_query)
+	if not wall_hit.is_empty():
+		step = previous.distance_to(wall_hit.position)
 	global_position += direction * step
 	remaining_distance -= step
 	# Sort swept-circle intersections so the first physical contact wins,
@@ -58,5 +63,5 @@ func _physics_process(delta: float) -> void:
 		if hits_left <= 0:
 			queue_free()
 			return
-	if remaining_distance <= 0:
+	if remaining_distance <= 0 or not wall_hit.is_empty():
 		queue_free()

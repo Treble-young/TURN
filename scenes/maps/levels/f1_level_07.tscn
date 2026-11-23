@@ -1,0 +1,45 @@
+[gd_scene load_steps=4 format=3]
+[ext_resource type="Script" path="res://scripts/maps/battle_map.gd" id="1"]
+[ext_resource type="TileSet" path="res://assets/maps/shared_tileset.tres" id="2"]
+[ext_resource type="Script" path="res://scripts/maps/enemy_spawn.gd" id="3"]
+[node name="BattleMap" type="Node2D"]
+y_sort_enabled = true
+script = ExtResource("1")
+test_battle_type = 0
+
+[node name="Ground" type="TileMapLayer" parent="."]
+z_index = -10
+tile_set = ExtResource("2")
+[node name="Decorations" type="TileMapLayer" parent="."]
+z_index = -9
+tile_set = ExtResource("2")
+[node name="Transitions" type="TileMapLayer" parent="."]
+z_index = -8
+tile_set = ExtResource("2")
+[node name="Props" type="Node2D" parent="."]
+y_sort_enabled = true
+[node name="PlayerStart" type="Marker2D" parent="."]
+position = Vector2(576, 385)
+[node name="EnemySpawns" type="Node2D" parent="."]
+
+[node name="Spawn1" type="Marker2D" parent="EnemySpawns"]
+position = Vector2(230, 216)
+script = ExtResource("3")
+enemy_kind = "goblin"
+count = 2
+wave = 1
+
+[node name="Spawn2" type="Marker2D" parent="EnemySpawns"]
+position = Vector2(850, 480)
+script = ExtResource("3")
+enemy_kind = "slime_medium"
+count = 1
+wave = 1
+
+[node name="HardReinforcement" type="Marker2D" parent="EnemySpawns"]
+position = Vector2(600, 220)
+script = ExtResource("3")
+enemy_kind = "slime_large"
+count = 1
+wave = 2
+encounter_variant = 2

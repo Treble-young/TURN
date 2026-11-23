@@ -3,14 +3,23 @@ extends Control
 const GAME_SCENE := "res://scenes/expedition/route_map.tscn"
 
 @onready var start_button: Button = $Center/Menu/Buttons/StartGame
-@onready var seed_field: LineEdit = $Center/Menu/Buttons/Seed
-@onready var seed_error: Label = $Center/Menu/Buttons/SeedError
+var difficulty_dialog: Control
+var options_menu: CanvasLayer
 
 func _ready() -> void:
+	MusicManager.set_context(&"non_combat")
 	_apply_theme()
 	start_button.grab_focus()
-	seed_field.text_changed.connect(func(_value: String): seed_error.hide())
-	seed_field.text_submitted.connect(func(_value: String): _on_start_game_pressed())
+	options_menu = preload("res://scenes/ui/pause_menu.tscn").instantiate()
+	options_menu.main_menu_mode = true
+	add_child(options_menu)
+	options_menu.closed.connect(func(): $Center/Menu/Buttons/Options.grab_focus())
+	$Center/Menu/Buttons/Options.pressed.connect(func(): options_menu.pause_game())
+	difficulty_dialog = Control.new()
+	difficulty_dialog.set_script(preload("res://scripts/ui/difficulty_dialog.gd"))
+	add_child(difficulty_dialog)
+	difficulty_dialog.confirmed.connect(_start_expedition)
+	difficulty_dialog.canceled.connect(_close_difficulty)
 	resized.connect(queue_redraw)
 
 func _draw() -> void:
@@ -48,19 +57,22 @@ func _apply_theme() -> void:
 	theme = menu_theme
 
 func _on_start_game_pressed() -> void:
-	var source := seed_field.text.strip_edges()
-	var seed_value := -1
-	if not source.is_empty():
-		if not source.is_valid_int() or source.to_int() < 0 or source.to_int() > 4294967295:
-			seed_error.show()
-			seed_field.grab_focus()
-			return
-		seed_value = source.to_int()
+	for name in ["StartGame", "Options", "QuitGame"]:
+		$Center/Menu/Buttons.get_node(name).disabled = true
+	difficulty_dialog.open()
+
+func _close_difficulty() -> void:
+	for name in ["StartGame", "Options", "QuitGame"]:
+		$Center/Menu/Buttons.get_node(name).disabled = false
+	start_button.grab_focus()
+
+func _start_expedition(seed_value: int, difficulty: int) -> void:
 	start_button.disabled = true
-	Expedition.start_run(seed_value)
+	Expedition.start_run(seed_value, difficulty)
 	var result := get_tree().change_scene_to_file(GAME_SCENE)
 	if result != OK:
 		start_button.disabled = false
+		difficulty_dialog.confirm_button.disabled = false
 		push_error("Unable to open game scene: %s" % error_string(result))
 
 func _on_quit_game_pressed() -> void:

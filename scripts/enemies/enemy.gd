@@ -13,6 +13,9 @@ var attack_hit: bool = false
 var target: Node2D
 
 func _ready() -> void:
+	stats = stats.duplicate() as EnemyStats
+	stats.max_health *= Expedition.ENEMY_MULTIPLIERS[Expedition.difficulty]
+	stats.damage *= Expedition.ENEMY_MULTIPLIERS[Expedition.difficulty]
 	health = stats.max_health
 	sprite.sprite_frames = load(stats.frames_path)
 	sprite.scale = Vector2.ONE * stats.visual_scale

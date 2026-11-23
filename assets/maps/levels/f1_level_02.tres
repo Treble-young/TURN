@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="LevelDefinition" load_steps=3 format=3]
+[ext_resource type="Script" path="res://scripts/maps/level_definition.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/maps/levels/f1_level_02.tscn" id="2"]
+[resource]
+script = ExtResource("1")
+level_id = "f1_level_02"
+display_name = "第1层·待制作关卡02"
+map_scene = ExtResource("2")
+min_floor = 1
+max_floor = 1
+boss_level = false

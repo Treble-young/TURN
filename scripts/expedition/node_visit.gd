@@ -19,6 +19,7 @@ func _ready() -> void:
 	if not Expedition.node_pending or kind < Expedition.Kind.SHOP or kind > Expedition.Kind.WISH:
 		get_tree().change_scene_to_file.bind(MAP).call_deferred()
 		return
+	MusicManager.set_context(&"non_combat")
 	theme = UI.make_theme()
 	var center := CenterContainer.new()
 	add_child(center)

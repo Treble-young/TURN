@@ -39,6 +39,8 @@ var is_charging: bool = false
 var charge_time: float = 0.0
 var _charge_release_requested: bool = false
 var _light_shot_damage: float = 0.0
+@export_range(0, 100) var experience_efficiency_percent: int = 100
+var experience_remainder: int = 0
 var health: float
 var is_dead: bool = false
 var _hurt_timer: float = 0.0
@@ -278,7 +280,9 @@ func take_damage(amount: float) -> void:
 
 func gain_experience(amount: int) -> void:
 	if not is_dead:
-		experience_progress.add_experience(amount)
+		var scaled := maxi(0, amount) * experience_efficiency_percent + experience_remainder
+		experience_remainder = scaled % 100
+		experience_progress.add_experience(int(scaled / 100.0))
 
 func release_light_charge() -> void:
 	if not is_charging or combat_locked or is_transforming or is_dead:

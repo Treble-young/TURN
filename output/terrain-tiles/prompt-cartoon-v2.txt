@@ -1,0 +1,13 @@
+Create a single game terrain tileset atlas matching the provided REFERENCE IMAGE's art direction closely. Reference is STYLE ONLY: copy its charming simplified 2D cartoon fantasy storybook ground painting, warm muted olive greens and ochres, flat broad irregular color patches, sparse stylized grass marks, creamy flowers, dark warm brown hand-drawn outlines around small props, minimal two or three tone shading. Absolutely avoid realism, photographic texture, detailed grass blades, glossy rendering, detailed rock grain, 3D render lighting. Ground tiles should look like they belong underneath the character in this reference.
+ONE landscape image, exactly EIGHT equal AXIS-ALIGNED SQUARE tiles in FOUR columns by TWO rows, equal clear transparent gutters and transparent outside margin. Each square full of terrain right to its edges. Square edges horizontal and vertical, not diamond or isometric shape. No sidewalls, no raised blocks, no outline frames around tiles. Surface details viewed at a consistent oblique top-down camera angle like reference, but tile footprint remains a flat axis-aligned square. Low-profile sparse decoration. No objects protrude outside squares. Each tile's surface has evenly distributed unobtrusive detail and no central vignette.
+Top row left to right:
+1 ordinary grass: muted olive green ground, simple broad moss patches, a few tiny grouped cartoon grass strokes.
+2 flower grass: same muted grass, sparse little cream yellow and pale pink five-petal flowers, simple outlined leaf clumps.
+3 wasteland: warm ochre brown bare ground with simplified thin cracks, a few small rounded stones and dry grass.
+4 corrupted grass: muted dark olive and dusty purple ground, simplified dark purple tendrils and violet grass, no intense glow.
+Bottom row left to right:
+5 swamp: muted moss olive mud, flat stylized gray-green shallow pools, sparse small outlined reeds and lily leaves.
+6 snow: warm creamy white and pale dusty blue flat snow patches, simple small snow-covered grass tufts, very minimal shading.
+7 basalt: muted charcoal blue-gray broad chunky rock plates, simple dark brown-gray cracks, flat two-tone shading.
+8 lava: flat warm orange-red molten ground with buttery yellow lava channels and simplified dark brown charcoal crust patches; cartoon painted shapes, no realistic glow.
+All eight are cohesive, clean readable 2D cartoon game assets, softly hand-painted with restrained paper-like texture exactly in spirit of reference. TRUE alpha transparent gutters/background. No scene, no characters, no trees, no architecture, no UI, no letters, no labels, no numbers, no watermark.

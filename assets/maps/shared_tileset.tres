@@ -1,0 +1,70 @@
+[gd_resource type="TileSet" format=3 uid="uid://u4x06cr2msvf"]
+
+[ext_resource type="Texture2D" uid="uid://duqgju58tdrsf" path="res://assets/tiles/temporary/grass.png" id="1"]
+[ext_resource type="Texture2D" uid="uid://bly1ndq1tfj4t" path="res://assets/tiles/temporary/flowers.png" id="2"]
+[ext_resource type="Texture2D" uid="uid://qxdupubtiu7t" path="res://assets/tiles/temporary/dry_soil.png" id="3"]
+[ext_resource type="Texture2D" uid="uid://d3r7bfyqg3d37" path="res://assets/tiles/temporary/shadow_grass.png" id="4"]
+[ext_resource type="Texture2D" uid="uid://br5s8wwosmr6p" path="res://assets/tiles/temporary/swamp.png" id="5"]
+[ext_resource type="Texture2D" uid="uid://e37d2jvv3lo0" path="res://assets/tiles/temporary/snow.png" id="6"]
+[ext_resource type="Texture2D" uid="uid://cudj33bwuxtg6" path="res://assets/tiles/temporary/stone.png" id="7"]
+[ext_resource type="Texture2D" uid="uid://dcg7fpa1hayoo" path="res://assets/tiles/temporary/lava.png" id="8"]
+
+[sub_resource type="TileSetAtlasSource" id="grass"]
+resource_name = "grass"
+texture = ExtResource("1")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="flowers"]
+resource_name = "flowers"
+texture = ExtResource("2")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="dry_soil"]
+resource_name = "dry_soil"
+texture = ExtResource("3")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="shadow_grass"]
+resource_name = "shadow_grass"
+texture = ExtResource("4")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="swamp"]
+resource_name = "swamp"
+texture = ExtResource("5")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="snow"]
+resource_name = "snow"
+texture = ExtResource("6")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="stone"]
+resource_name = "stone"
+texture = ExtResource("7")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="lava"]
+resource_name = "lava"
+texture = ExtResource("8")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[resource]
+tile_size = Vector2i(64, 64)
+physics_layer_0/collision_layer = 4
+sources/0 = SubResource("grass")
+sources/1 = SubResource("flowers")
+sources/2 = SubResource("dry_soil")
+sources/3 = SubResource("shadow_grass")
+sources/4 = SubResource("swamp")
+sources/5 = SubResource("snow")
+sources/6 = SubResource("stone")
+sources/7 = SubResource("lava")

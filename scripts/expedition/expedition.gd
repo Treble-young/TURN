@@ -1,5 +1,12 @@
 extends Node
 
+enum Difficulty { STANDARD, HARD, NIGHTMARE }
+const DIFFICULTY_NAMES := ["标准", "困难", "噩梦"]
+const ENEMY_MULTIPLIERS := [1.0, 1.2, 1.5]
+const EXPERIENCE_PERCENT := [100, 80, 50]
+var difficulty: Difficulty = Difficulty.STANDARD
+var experience_remainder: int = 0
+
 enum Kind { BATTLE, ELITE, BOSS, SHOP, REST, ENCOUNTER, WISH }
 
 const FLOOR_COUNT := 5
@@ -58,8 +65,11 @@ var node_pending := false
 var active := false
 var won := false
 var report := ""
+var assigned_levels: Dictionary = {}
 
-func start_run(requested_seed: int = -1) -> void:
+func start_run(requested_seed: int = -1, selected_difficulty: int = Difficulty.STANDARD) -> void:
+	difficulty = clampi(selected_difficulty, 0, 2) as Difficulty
+	experience_remainder = 0
 	if requested_seed < 0:
 		rng.randomize()
 		run_seed = rng.randi()
@@ -72,6 +82,8 @@ func start_run(requested_seed: int = -1) -> void:
 		var rows := _generate_floor()
 		maps.append(rows)
 		crossings.append(_generate_crossings(rows))
+	var library = load("res://assets/maps/map_library.tres")
+	assigned_levels = library.assign_levels(maps, run_seed)
 	floor_number = 1
 	stage = -1
 	lane = -1
@@ -85,9 +97,17 @@ func start_run(requested_seed: int = -1) -> void:
 	offers.clear()
 	current_kind = -1
 	node_pending = false
-	active = true
+	active = _level_assignment_complete()
 	won = false
-	report = ""
+	report = "" if active else "关卡库配置不足，请补充符合层数限制的关卡。"
+
+func _level_assignment_complete() -> bool:
+	for floor_index in range(maps.size()):
+		for row in range(maps[floor_index].size()):
+			for slot in range(maps[floor_index][row].size()):
+				if is_battle(maps[floor_index][row][slot]) and not assigned_levels.has("%d:%d:%d" % [floor_index + 1, row, slot]):
+					return false
+	return true
 
 func _generate_floor() -> Array:
 	var first: Array[int] = [Kind.BATTLE, Kind.BATTLE, Kind.ELITE]

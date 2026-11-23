@@ -2,23 +2,26 @@ extends RefCounted
 
 const BOSS_NAME := "深沼首领"
 const ENEMY_STATS := {
+	"slime_small": preload("res://assets/enemies/slime_small.tres"),
 	"goblin": preload("res://assets/enemies/goblin.tres"),
 	"slime_medium": preload("res://assets/enemies/slime_medium.tres"),
 	"slime_large": preload("res://assets/enemies/slime_large.tres"),
 }
 
-static func waves_for(kind: int, floor_number: int) -> Array:
-	match kind:
-		Expedition.Kind.BOSS:
-			return [["goblin", "slime_medium", "goblin"], ["boss", "goblin", "slime_medium"]]
-		Expedition.Kind.ELITE:
-			return [["goblin", "slime_medium", "goblin"], ["slime_large", "goblin", "goblin"]]
-	var first: Array[String] = ["goblin", "goblin", "slime_medium"]
-	if floor_number >= 3:
-		first.append("goblin")
-	if floor_number == Expedition.FLOOR_COUNT:
-		first.append("slime_medium")
-	return [first]
+static func waves_for(kind: int, floor_number: int, stage: int = -1, lane: int = -1) -> Array:
+	var library = load("res://assets/maps/map_library.tres")
+	var scene: PackedScene = library.map_for(kind, floor_number, stage, lane)
+	if scene == null: return []
+	var map = scene.instantiate()
+	var waves: Array = []
+	for number in range(map.configured_wave_count(kind)):
+		var units: Array = []
+		for marker in map.spawn_markers(kind):
+			if marker.wave == number + 1:
+				for index in marker.count: units.append(marker.enemy_kind)
+		waves.append(units)
+	map.free()
+	return waves
 
 static func stats_for(kind: String) -> EnemyStats:
 	return ENEMY_STATS["slime_large" if kind == "boss" else kind]
@@ -48,6 +51,11 @@ static func _format_counts(counts: Dictionary) -> String:
 		parts.append("%s ×%d" % [display_name, counts[display_name]])
 	return "、".join(parts)
 
-static func battlefield_preview(_kind: int, _floor_number: int, _node: Vector2i) -> Texture2D:
-	# Future thumbnails can be selected by floor, battle kind, or node (stage, lane).
-	return null
+static func battlefield_preview(kind: int, floor_number: int, node: Vector2i) -> Texture2D:
+	var library = load("res://assets/maps/map_library.tres")
+	var scene: PackedScene = library.map_for(kind, floor_number, node.x, node.y)
+	if scene == null: return null
+	var map = scene.instantiate()
+	var texture: Texture2D = map.preview_texture
+	map.free()
+	return texture

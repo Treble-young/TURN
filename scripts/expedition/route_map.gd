@@ -42,6 +42,7 @@ var drag_origin := Vector2.ZERO
 var drag_scroll_origin := 0
 
 func _ready() -> void:
+	MusicManager.set_context(&"non_combat")
 	if Expedition.maps.is_empty():
 		get_tree().change_scene_to_file.bind(MAIN_MENU).call_deferred()
 		return
@@ -343,7 +344,11 @@ func _preview_node() -> void:
 		travel_controls.add_child(UI.action("确认前往", _confirm_node))
 
 func _preview_battle(kind: int) -> void:
-	var waves := ENCOUNTER.waves_for(kind, Expedition.floor_number)
+	var library = load("res://assets/maps/map_library.tres")
+	var level = library.definition_for(Expedition.floor_number, selected.x, selected.y)
+	if level != null:
+		details.add_child(UI.label(level.display_name, 20, UI.GOLD))
+	var waves := ENCOUNTER.waves_for(kind, Expedition.floor_number, selected.x, selected.y)
 	var rows := PackedStringArray()
 	for index in waves.size():
 		rows.append("第 %d 波　%s" % [index + 1, ENCOUNTER.wave_summary(waves[index])])
@@ -377,7 +382,7 @@ func _confirm_node() -> void:
 	get_tree().change_scene_to_file(scene)
 
 func _new_run() -> void:
-	Expedition.start_run()
+	Expedition.start_run(-1, Expedition.difficulty)
 	selected = Vector2i(-1, -1)
 	_build_nodes()
 	_update_details()
