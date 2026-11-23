@@ -28,6 +28,17 @@ var _form_label: Label
 @export var attack_damage: float = 18.0
 @export var attack_range: float = 105.0
 @export var hurt_invulnerability: float = 0.6
+@export var max_charge_time: float = 1.5
+@export var max_charge_multiplier: float = 3.0
+@export var enhanced_light_blade: bool = false
+@export var light_blade_range: float = 650.0
+@export var light_blade_extra_hits: int = 0
+@export var max_charge_size_multiplier: float = 1.8
+var combat_locked: bool = false
+var is_charging: bool = false
+var charge_time: float = 0.0
+var _charge_release_requested: bool = false
+var _light_shot_damage: float = 0.0
 var health: float
 var is_dead: bool = false
 var _hurt_timer: float = 0.0
@@ -54,7 +65,7 @@ func _ready() -> void:
 	_play_animation(&"idle")
 
 func _physics_process(_delta: float) -> void:
-	if is_dead:
+	if is_dead or combat_locked:
 		return
 	if is_transforming:
 		velocity = Vector2.ZERO
@@ -73,22 +84,38 @@ func _physics_process(_delta: float) -> void:
 	_form_label.modulate = Color("d69dff") if current_form == Form.SHADOW else Color("ffe0a2")
 	_hurt_timer = maxf(0.0, _hurt_timer - _delta)
 	sprite.modulate = Color(1, 0.6, 0.6) if _hurt_timer > 0 else Color.WHITE
+	if is_charging:
+		if not _charge_release_requested:
+			charge_time = minf(charge_time + _delta, max_charge_time)
+		_form_label.text += "  CHARGE %d%%" % roundi(charge_time / maxf(0.01, max_charge_time) * 100)
+		if not Input.is_action_pressed("attack"):
+			release_light_charge()
+	if current_form == Form.LIGHT and Input.is_action_just_pressed("attack"):
+		attack()
 	var direction := Input.get_vector("move_left", "move_right", "move_up", "move_down")
-	velocity = direction * move_speed
+	velocity = Vector2.ZERO if is_charging else direction * move_speed
 	move_and_slide()
 	if not is_attacking:
 		if not direction.is_zero_approx():
 			facing_direction = direction
 			if absf(direction.x) > 0.01:
 				facing_right = direction.x > 0.0
-	if Input.is_action_just_pressed("attack"):
+	if current_form == Form.SHADOW and Input.is_action_just_pressed("attack"):
 		attack()
 	elif not is_attacking:
 		_play_animation(&"run" if not direction.is_zero_approx() else &"idle")
 
 ## Public entry point for a future automatic weapon controller.
 func attack() -> void:
-	if is_dead or is_transforming:
+	if is_dead or is_transforming or combat_locked:
+		return
+	if current_form == Form.LIGHT:
+		if not is_attacking:
+			is_charging = true
+			charge_time = 0.0
+			_charge_release_requested = false
+			velocity = Vector2.ZERO
+			_start_attack_stage()
 		return
 	if is_attacking:
 		if current_form == Form.SHADOW and combo_stage < 3 and sprite.frame >= 2:
@@ -106,13 +133,15 @@ func _start_attack_stage() -> void:
 	attack_started.emit()
 
 func _advance_form(delta: float) -> void:
-	if is_transforming or is_dead:
+	if is_transforming or is_dead or combat_locked:
 		return
 	form_remaining = maxf(0.0, form_remaining - delta)
 	if form_remaining <= 0.0:
 		_begin_transformation()
 
 func _begin_transformation() -> void:
+	is_charging = false
+	_charge_release_requested = false
 	is_transforming = true
 	is_attacking = false
 	combo_stage = 0
@@ -186,6 +215,8 @@ func _play_animation(animation_name: StringName) -> void:
 	sprite.play(StringName("%s_%s" % [animation_name, "right" if facing_right else "left"]))
 
 func _on_animation_finished() -> void:
+	if combat_locked:
+		return
 	if is_transforming:
 		_finish_transformation()
 		return
@@ -204,6 +235,20 @@ func _on_animation_finished() -> void:
 		attack_finished.emit()
 
 func _on_attack_frame() -> void:
+	if combat_locked or is_transforming or is_dead:
+		return
+	if current_form == Form.LIGHT:
+		if not is_attacking:
+			return
+		if is_charging and sprite.frame >= 5:
+			sprite.pause()
+			sprite.frame = 5
+			if _charge_release_requested:
+				_release_light_swing()
+		elif not is_charging and sprite.frame >= 6 and not _attack_hit:
+			_attack_hit = true
+			_spawn_light_blade()
+		return
 	if is_dead or not is_attacking or _attack_hit or sprite.frame < (2 if current_form == Form.SHADOW else 6):
 		return
 	_attack_hit = true
@@ -214,13 +259,14 @@ func _on_attack_frame() -> void:
 			enemy.take_damage(attack_damage * ([1.0, 1.1, 1.5][clampi(combo_stage - 1, 0, 2)] if current_form == Form.SHADOW else 1.0))
 
 func take_damage(amount: float) -> void:
-	if is_dead or is_transforming or _hurt_timer > 0 or amount <= 0:
+	if is_dead or combat_locked or is_transforming or _hurt_timer > 0 or amount <= 0:
 		return
 	health = maxf(0.0, health - amount)
 	_hurt_timer = hurt_invulnerability
 	health_changed.emit(health, max_health)
 	if health <= 0:
 		is_dead = true
+		is_charging = false
 		_combo_queued = false
 		_combo_grace = 0.0
 		is_attacking = false
@@ -233,3 +279,67 @@ func take_damage(amount: float) -> void:
 func gain_experience(amount: int) -> void:
 	if not is_dead:
 		experience_progress.add_experience(amount)
+
+func release_light_charge() -> void:
+	if not is_charging or combat_locked or is_transforming or is_dead:
+		return
+	_charge_release_requested = true
+	if sprite.frame >= 5:
+		_release_light_swing()
+
+func _release_light_swing() -> void:
+	is_charging = false
+	_light_shot_damage = attack_damage * lerpf(1.0, max_charge_multiplier, clampf(charge_time / maxf(0.01, max_charge_time), 0.0, 1.0))
+	if enhanced_light_blade:
+		_light_shot_damage *= 1.5
+	sprite.play()
+	sprite.set_frame_and_progress(6, 0.0)
+
+func _spawn_light_blade() -> void:
+	var blade := LightBlade.new()
+	blade.owner_player = self
+	blade.enhanced = enhanced_light_blade
+	blade.damage = _light_shot_damage
+	blade.remaining_distance = maxf(1.0, light_blade_range)
+	blade.hits_left = (3 if enhanced_light_blade else 1) + maxi(0, light_blade_extra_hits)
+	blade.size_multiplier = lerpf(1.0, max_charge_size_multiplier, clampf(charge_time / maxf(0.01, max_charge_time), 0.0, 1.0))
+	blade.direction = light_blade_aim_direction()
+	get_parent().add_child(blade)
+	blade.global_position = global_position + Vector2(0, -35)
+
+func light_blade_aim_direction() -> Vector2:
+	var forward := Vector2.RIGHT if facing_right else Vector2.LEFT
+	var nearest_distance := INF
+	var nearest: Node2D = null
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if enemy.is_dead or enemy.is_queued_for_deletion():
+			continue
+		var offset: Vector2 = enemy.global_position - global_position
+		if offset.dot(forward) < 0.0 or offset.length() > light_blade_range:
+			continue
+		if offset.length_squared() < nearest_distance:
+			nearest_distance = offset.length_squared()
+			nearest = enemy
+	if nearest != null:
+		var aim := nearest.global_position + Vector2(0, -30) - (global_position + Vector2(0, -35))
+		if not aim.is_zero_approx():
+			return aim.normalized()
+	return forward
+
+func unlock_light_blade() -> void:
+	enhanced_light_blade = true
+
+func lock_combat() -> void:
+	combat_locked = true
+	is_charging = false
+	is_attacking = false
+	_combo_queued = false
+	_combo_grace = 0.0
+	velocity = Vector2.ZERO
+	if is_transforming:
+		is_transforming = false
+		_restore_enemies()
+	if not is_dead:
+		_play_animation(&"idle")
+	for blade in get_tree().get_nodes_in_group("player_projectiles"):
+		blade.queue_free()

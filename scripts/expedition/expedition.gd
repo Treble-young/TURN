@@ -18,7 +18,7 @@ const NORMAL_DROP := 0.12
 const ELITE_DROP := 0.30
 const DROP_PER_XP := 0.0015
 const MAX_XP_DROP_BONUS := 0.30
-const KIND_NAMES := ["战斗", "困难战斗", "首领战斗", "商人", "休息处", "不期而遇", "得偿所愿"]
+const KIND_NAMES := ["常规交锋", "强敌试炼", "宿命对决", "道中行商", "休憩之所", "命运所指", "秘藏之地"]
 const KIND_DETAILS := [
 	"清除一波敌人。战胜后获得金币，并有机会获得物品。",
 	"迎战两波更强的敌人，获得更多经验和金币。",
@@ -29,6 +29,9 @@ const KIND_DETAILS := [
 	"石龛会出现两件物品。任选一件免费带走。",
 ]
 const ITEMS := {
+	"light_range": {"name": "长辉棱镜", "effect": "光刃射程 +25%（可叠加）", "price": 20},
+	"light_pierce": {"name": "贯光符印", "effect": "光刃可额外命中 1 个敌人（可叠加）", "price": 24},
+	"light_blade": {"name": "辉光刻印", "effect": "光刃强化：伤害 +50%，最多命中三个敌人（重复获取不叠加）", "price": 28},
 	"blade": {"name": "磨锋石", "effect": "攻击伤害 +4", "price": 18},
 	"heart": {"name": "琥珀护符", "effect": "生命上限 +12，并回复 12 生命", "price": 22},
 	"boots": {"name": "巡路靴", "effect": "移动速度 +20", "price": 17},
@@ -261,7 +264,7 @@ func complete_encounter(take_risk: bool) -> void:
 func complete_wish(id: String) -> void:
 	if node_pending and current_kind == Kind.WISH and offers.has(id):
 		_award_item(id)
-		report = "得偿所愿 · 获得%s，%s" % [ITEMS[id]["name"], ITEMS[id]["effect"]]
+		report = "秘藏之地 · 获得%s，%s" % [ITEMS[id]["name"], ITEMS[id]["effect"]]
 		node_pending = false
 
 func win_battle(remaining_health: float, progress: ExperienceProgress) -> String:

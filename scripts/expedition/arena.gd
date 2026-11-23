@@ -38,6 +38,9 @@ func _ready() -> void:
 	initial_experience = progress.total_experience
 	player.max_health = Expedition.max_health(progress.level)
 	player.attack_damage = Expedition.damage(progress.level)
+	player.enhanced_light_blade = Expedition.relics.has("light_blade")
+	player.light_blade_range *= 1.0 + 0.25 * int(Expedition.relics.get("light_range", 0))
+	player.light_blade_extra_hits = int(Expedition.relics.get("light_pierce", 0))
 	player.move_speed = Expedition.speed()
 	player.health = Expedition.health
 	waves = ENCOUNTER.waves_for(Expedition.current_kind, Expedition.floor_number)
@@ -66,6 +69,7 @@ func _process(delta: float) -> void:
 		return
 	if wave_index == waves.size() - 1:
 		collecting = true
+		player.lock_combat()
 		wave_label.text = "战斗完成 · 正在拾取经验"
 		return
 	if intermission < 0.0:
@@ -181,6 +185,7 @@ func _update_experience(level: int, current: int, required: int) -> void:
 	experience_bar.value = current if required > 0 else 1.0
 
 func _result(title: String, message: String, action: String) -> void:
+	player.lock_combat()
 	var dim := ColorRect.new()
 	dim.color = Color(0.06, 0.05, 0.08, 0.76)
 	dim.size = Vector2(1152, 648)

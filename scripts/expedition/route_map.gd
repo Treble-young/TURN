@@ -7,15 +7,22 @@ const VISIT := "res://scenes/expedition/node_visit.tscn"
 const MAIN_MENU := "res://scenes/ui/main_menu.tscn"
 const HEADER_HEIGHT := 70.0
 const SIDEBAR_WIDTH := 322.0
-const MAP_HEIGHT := 1040.0
+const MAP_HEIGHT := 1200.0
+const MAP_VERTICAL_PADDING := 175.0
 const ROW_GAP := 170.0
 const DRAG_THRESHOLD := 8.0
 const INK := Color("#533727")
-const STITCH := Color("#886143c7")
-const STITCH_ACCENT := Color("#a76d40")
 const ROUTE_OFFSETS := [Vector2(0, 0), Vector2(-18, 9), Vector2(12, -5), Vector2(8, -9), Vector2(-10, 5)]
-const KIND_MARKS := ["战", "险", "王", "商", "歇", "遇", "愿"]
-const KIND_COLORS := ["#623a31", "#863a2b", "#572b38", "#45584a", "#405866", "#585274", "#7c572c"]
+const ROUTE_BACKGROUND = preload("res://assets/ui/route/background.png")
+const NODE_ICONS = [
+	preload("res://assets/ui/route/battle.tres"),
+	preload("res://assets/ui/route/elite.tres"),
+	preload("res://assets/ui/route/boss.tres"),
+	preload("res://assets/ui/route/shop.tres"),
+	preload("res://assets/ui/route/rest.tres"),
+	preload("res://assets/ui/route/encounter.tres"),
+	preload("res://assets/ui/route/treasure.tres"),
+]
 
 var scroll: ScrollContainer
 var canvas: Control
@@ -28,7 +35,7 @@ var selected := Vector2i(-1, -1)
 var node_buttons: Dictionary = {}
 var header_stats: Label
 var inventory: Label
-var paper_texture: NoiseTexture2D
+var paper_style: StyleBoxTexture
 var tracking_drag := false
 var dragging := false
 var drag_origin := Vector2.ZERO
@@ -97,18 +104,13 @@ func _build_canvas() -> void:
 	scroll.add_child(canvas)
 	canvas.draw.connect(_draw_map)
 	canvas.resized.connect(_position_nodes)
-	var noise := FastNoiseLite.new()
-	noise.seed = 41
-	noise.frequency = 0.015
-	noise.fractal_octaves = 5
-	var tones := Gradient.new()
-	tones.colors = PackedColorArray([Color("#c5a073"), Color("#e7c694")])
-	paper_texture = NoiseTexture2D.new()
-	paper_texture.width = 1152
-	paper_texture.height = int(MAP_HEIGHT)
-	paper_texture.color_ramp = tones
-	paper_texture.noise = noise
-	paper_texture.changed.connect(canvas.queue_redraw)
+	paper_style = StyleBoxTexture.new()
+	paper_style.texture = ROUTE_BACKGROUND
+	# Preserve the supplied scroll corners while expanding the blank center.
+	paper_style.set_texture_margin(SIDE_LEFT, 64)
+	paper_style.set_texture_margin(SIDE_RIGHT, 64)
+	paper_style.set_texture_margin(SIDE_TOP, 90)
+	paper_style.set_texture_margin(SIDE_BOTTOM, 90)
 
 func _build_sidebar() -> void:
 	sidebar = PanelContainer.new()
@@ -173,31 +175,13 @@ func _finish_drag() -> void:
 
 func _draw_map() -> void:
 	var area := Rect2(Vector2.ZERO, canvas.size)
-	canvas.draw_rect(area, Color("#d3a973"))
-	canvas.draw_texture_rect(paper_texture, area, false)
-	canvas.draw_rect(area.grow(-13), Color("#916b48"), false, 1.0)
-	_draw_embroidered_edge(36.0)
-	_draw_embroidered_edge(area.size.x - 36.0)
+	canvas.draw_style_box(paper_style, area)
 	var rows := Expedition.current_map()
 	for row in range(1, rows.size()):
 		for from_lane in rows[row - 1].size():
 			for to_lane in rows[row].size():
 				if Expedition.has_route(from_lane, row, to_lane):
 					_draw_link(row, from_lane, to_lane)
-
-func _draw_embroidered_edge(x: float) -> void:
-	for edge in [x - 14.0, x + 14.0]:
-		canvas.draw_dashed_line(Vector2(edge, 22), Vector2(edge, MAP_HEIGHT - 22), STITCH, 1.0, 4.0)
-	for y in range(45, int(MAP_HEIGHT) - 28, 52):
-		var knot := Vector2(x, y)
-		var pattern := PackedVector2Array([
-			knot + Vector2(0, -16), knot + Vector2(9, 0),
-			knot + Vector2(0, 16), knot + Vector2(-9, 0), knot + Vector2(0, -16),
-		])
-		canvas.draw_polyline(pattern, STITCH, 1.2, true)
-		canvas.draw_line(knot + Vector2(-5, -5), knot + Vector2(5, 5), STITCH_ACCENT, 1.2, true)
-		canvas.draw_line(knot + Vector2(5, -5), knot + Vector2(-5, 5), STITCH_ACCENT, 1.2, true)
-		canvas.draw_dashed_line(knot + Vector2(0, 19), knot + Vector2(0, 33), STITCH, 1.1, 2.5)
 
 func _draw_link(row: int, from_lane: int, to_lane: int) -> void:
 	var from := _point(row - 1, from_lane)
@@ -222,18 +206,15 @@ func _draw_link(row: int, from_lane: int, to_lane: int) -> void:
 	curve.bake_interval = 4.0
 	curve.add_point(from, Vector2.ZERO, sway - lift)
 	curve.add_point(destination, sway + lift)
-	if crosses:
-		var length := curve.get_baked_length()
-		var offset := 0.0
-		while offset < length:
-			var dash_end := minf(offset + 8.0, length)
-			canvas.draw_line(curve.sample_baked(offset), curve.sample_baked(dash_end), color, thickness, true)
-			offset += 15.0
-	else:
-		canvas.draw_polyline(curve.get_baked_points(), color, thickness, true)
+	var length := curve.get_baked_length()
+	var offset := 0.0
+	while offset < length:
+		var dash_end := minf(offset + 8.0, length)
+		canvas.draw_line(curve.sample_baked(offset), curve.sample_baked(dash_end), color, thickness, true)
+		offset += 15.0
 
 func _point(row: int, lane_index: int) -> Vector2:
-	var y := MAP_HEIGHT - 94.0 - row * ROW_GAP
+	var y := MAP_HEIGHT - MAP_VERTICAL_PADDING - row * ROW_GAP
 	if row == Expedition.STAGE_COUNT - 1:
 		return Vector2(canvas.size.x * 0.5, y)
 	var shift: Vector2 = ROUTE_OFFSETS[(row + lane_index + Expedition.floor_number - 1) % ROUTE_OFFSETS.size()]
@@ -251,7 +232,15 @@ func _build_nodes() -> void:
 				continue
 			var kind: int = rows[row][lane_index]
 			var button := Button.new()
-			button.text = KIND_MARKS[kind]
+			var icon := TextureRect.new()
+			icon.name = "NodeIcon"
+			icon.texture = NODE_ICONS[kind]
+			icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			icon.position = Vector2(6.8, 6.8)
+			icon.size = Vector2(48.4, 48.4)
+			icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			button.add_child(icon)
 			button.tooltip_text = Expedition.KIND_NAMES[kind]
 			button.size = Vector2(62, 62)
 			button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
@@ -260,16 +249,6 @@ func _build_nodes() -> void:
 			button.pressed.connect(_select_node.bind(row, lane_index))
 			canvas.add_child(button)
 			node_buttons[Vector2i(row, lane_index)] = button
-			var caption: String = Expedition.KIND_NAMES[kind]
-			if Expedition.has_crossing(row, lane_index):
-				caption += "  ·  可换线"
-			var label := UI.label(caption, 16, INK)
-			label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			label.add_theme_color_override("font_outline_color", Color("#debc8a"))
-			label.add_theme_constant_override("outline_size", 6)
-			label.size = Vector2(164, 26)
-			button.add_child(label)
-			label.position = Vector2(-51, 65)
 	_position_nodes()
 	_style_nodes()
 
@@ -284,10 +263,11 @@ func _style_nodes() -> void:
 	for key: Vector2i in node_buttons:
 		var button: Button = node_buttons[key]
 		var kind: int = rows[key.x][key.y]
-		var tint := Color(KIND_COLORS[kind])
+
 		var reachable := Expedition.can_reach(key.x, key.y)
 		var visited := Expedition.visited.has(key)
-		var fill := tint if reachable or visited else tint.lerp(Color("#e3bb87"), 0.72)
+		var fill := Color("#efcf95") if reachable else (Color("#c9ab78") if visited else Color("#dac29c"))
+		button.get_node("NodeIcon").modulate = Color.WHITE if reachable or visited else Color(0.72, 0.72, 0.72, 0.8)
 		var border := UI.GOLD if reachable else Color("#9f7653")
 		var width := 2
 		if selected == key:
@@ -354,16 +334,12 @@ func _preview_node() -> void:
 		var limit := roundi(Expedition.REST_HEAL_FRACTION * 100.0)
 		var outcome := "当前可恢复 %d 点生命。" % restore if restore > 0 else "当前生命已满。"
 		details.add_child(UI.label("回复量按最大生命值的 %d%% 计算。\n%s" % [limit, outcome], 16, UI.GOLD))
-	if Expedition.has_crossing(selected.x, selected.y):
-		details.add_child(UI.label("离开此节点时，可沿虚线免费换线。", 15, UI.SOFT))
 	travel_controls.show()
 	if Expedition.visited.has(selected):
 		travel_controls.add_child(UI.label("已经过此节点", 16, UI.SOFT))
 	elif not Expedition.can_reach(selected.x, selected.y):
 		travel_controls.add_child(UI.label("当前路线无法抵达此节点", 16, UI.SOFT))
 	else:
-		if Expedition.stage >= 0 and selected.x < Expedition.STAGE_COUNT - 1 and selected.y != Expedition.lane:
-			travel_controls.add_child(UI.label("前往此节点将免费换线。", 16, UI.GOLD))
 		travel_controls.add_child(UI.action("确认前往", _confirm_node))
 
 func _preview_battle(kind: int) -> void:
