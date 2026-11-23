@@ -51,7 +51,7 @@ func _ready() -> void:
 	_spawn_next_wave()
 
 func _process(delta: float) -> void:
-	if not is_instance_valid(progress) or finished or player.is_dead:
+	if not is_instance_valid(progress) or finished or player.is_dead or player.is_transforming:
 		return
 	player.position = player.position.clamp(FIELD.position + Vector2(16, 32), FIELD.end - Vector2(16, 12))
 	if collecting:

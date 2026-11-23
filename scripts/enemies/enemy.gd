@@ -24,6 +24,8 @@ func _ready() -> void:
 	sprite.frame_changed.connect(_frame_changed)
 	sprite.play(&"move")
 	target = get_tree().get_first_node_in_group("player")
+	if is_instance_valid(target) and target.is_transforming:
+		target.freeze_enemy(self)
 
 func _physics_process(delta: float) -> void:
 	if is_dead:
