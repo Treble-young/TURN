@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/events/event_definition.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/events/event_choice.gd" id="2"]
-[ext_resource type="Texture2D" path="res://assets/events/village.png" id="3"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/background_1.png" id="3"]
 [ext_resource type="Texture2D" path="res://assets/events/blacksmith.png" id="4"]
 
 [sub_resource type="Resource" id="Polish"]
@@ -29,7 +29,7 @@ script = ExtResource("1")
 event_id = "village_blacksmith"
 title = "村庄里的铁匠"
 npc_name = "铁匠"
-background = ExtResource("3")
+background_id = 1
 portrait = ExtResource("4")
 story = "你在村庄里遇到了一名铁匠，他正忙着低头锻造手中的武器。"
 min_floor = 1

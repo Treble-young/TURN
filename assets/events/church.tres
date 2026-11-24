@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="StoryEventDefinition" load_steps=5 format=3]
+[ext_resource type="Script" path="res://scripts/events/event_definition.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/events/event_choice.gd" id="2"]
+[sub_resource type="Resource" id="Exchange"]
+script = ExtResource("2")
+text = "在天平一侧放一件物品\n选择并丢弃一个遗物，获取一个随机遗物"
+exchange_relic = true
+[sub_resource type="Resource" id="Leave"]
+script = ExtResource("2")
+text = "转身离开"
+result_text = "你离开了这座破败的教堂。"
+[resource]
+script = ExtResource("1")
+event_id = "ruined_church"
+title = "破败教堂"
+background_id = 9
+story = "你误打误撞来到了这座破败的教堂，巨大的神像矗立在你面前"
+min_floor = 1
+max_floor = 5
+choices = Array[ExtResource("2")]([SubResource("Exchange"), SubResource("Leave")])

@@ -16,6 +16,7 @@ var regions: Dictionary
 var font: Font
 var backpack_button: Button
 var inventory: PanelContainer
+var inventory_items: VBoxContainer
 var last_values: Array = []
 
 func _ready() -> void:
@@ -34,10 +35,11 @@ func _ready() -> void:
 	refresh()
 
 func _process(_delta: float) -> void:
-	var values := [Expedition.floor_number, Expedition.health, Expedition.max_health(), Expedition.damage(Expedition.level), Expedition.gold, Expedition.level, Expedition.experience, Expedition.relics.hash()]
+	var values := [Expedition.floor_number, Expedition.health, Expedition.max_health(), Expedition.damage(Expedition.level), Expedition.gold, Expedition.level, Expedition.experience, Expedition.relics.hash(), Expedition.relic_capacity]
 	if values != last_values:
 		last_values = values
 		refresh()
+		if is_instance_valid(inventory): _refresh_inventory()
 
 func refresh() -> void:
 	queue_redraw()
@@ -121,18 +123,23 @@ func _open_backpack() -> void:
 	inventory = PanelContainer.new()
 	inventory.position = Vector2(maxf(12, size.x - 410), 78)
 	inventory.size = Vector2(385, 390)
-	inventory.add_theme_stylebox_override("panel", UI.box(UI.PANEL, UI.GOLD, 1, 6))
+	var inventory_style := UI.box(UI.PANEL, UI.GOLD, 1, 6)
+	UI.set_margins(inventory_style, 12, 12)
+	inventory.add_theme_stylebox_override("panel", inventory_style)
 	add_child(inventory)
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	inventory.add_child(scroll)
-	var list := VBoxContainer.new()
-	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	list.add_theme_constant_override("separation", 10)
-	scroll.add_child(list)
-	list.add_child(UI.label("随身物品", 23, UI.GOLD))
-	if Expedition.relics.is_empty(): list.add_child(UI.label("还没有获得物品"))
-	for id: String in Expedition.relics:
-		var item: Dictionary = Expedition.ITEMS[id]
-		list.add_child(UI.label("%s ×%d\n%s" % [item.name, Expedition.relics[id], item.effect], 16))
-	list.add_child(UI.action("关闭", _open_backpack))
+	inventory_items = VBoxContainer.new()
+	inventory_items.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	inventory_items.add_theme_constant_override("separation", 10)
+	scroll.add_child(inventory_items)
+	_refresh_inventory()
+
+func _refresh_inventory() -> void:
+	for child in inventory_items.get_children():
+		inventory_items.remove_child(child)
+		child.queue_free()
+	inventory_items.add_child(UI.label("随身物品", 23, UI.GOLD))
+	preload("res://scripts/ui/relic_slots.gd").populate(inventory_items)
+	inventory_items.add_child(UI.action("关闭", _open_backpack))

@@ -77,6 +77,8 @@ func _refresh() -> void:
 				body.add_child(UI.label("营火药囊已恢复 %d 点生命。" % roundi(Expedition.rest_entry_healed), 16, UI.GOLD))
 			body.add_child(UI.label("本次休息可恢复 %d 点生命。" % roundi(Expedition.rest_heal_amount()), 16, UI.GOLD))
 			body.add_child(UI.action("休息", _rest))
+			body.add_child(UI.action("整理背包 · 遗物槽位 +1", _organize))
+			body.add_child(UI.label("休息与整理背包只能选择一项。", 15, UI.SOFT))
 		Expedition.Kind.ENCOUNTER:
 			body.add_child(UI.action("接受药膏 · 回复 8 生命", _encounter.bind(false)))
 			var insufficient_life := Expedition.health <= 12.0
@@ -86,6 +88,7 @@ func _refresh() -> void:
 		Expedition.Kind.WISH:
 			for id in Expedition.offers:
 				_item_row(id, false)
+			body.add_child(UI.action("放弃领取，继续前进", _leave_wish))
 
 func _item_row(id: String, for_sale: bool) -> void:
 	var item: Dictionary = Expedition.ITEMS[id]
@@ -98,7 +101,9 @@ func _item_row(id: String, for_sale: bool) -> void:
 	description.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(description)
 	var price := Expedition.shop_price(id)
-	var button := UI.action("购买 · %d 金币" % price, _buy.bind(id), Expedition.gold < price) if for_sale else UI.action("领取", _wish.bind(id))
+	var blocked := not Expedition.can_receive_relic(id)
+	var button := UI.action("购买 · %d 金币" % price, _buy.bind(id), blocked or Expedition.gold < price) if for_sale else UI.action("领取", _wish.bind(id), blocked)
+	if blocked: button.tooltip_text = "背包已满或已持有该唯一遗物"
 	button.custom_minimum_size.x = 142
 	row.add_child(button)
 	body.add_child(row)
@@ -113,6 +118,13 @@ func _leave_shop() -> void:
 
 func _rest() -> void:
 	Expedition.complete_rest()
+	_refresh()
+
+func _organize() -> void:
+	if Expedition.organize_backpack(): _refresh()
+
+func _leave_wish() -> void:
+	Expedition.leave_wish()
 	_refresh()
 
 func _encounter(risk: bool) -> void:

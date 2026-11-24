@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ol6ubd86euo3"
-path="res://.godot/imported/village.png-a5f973f8f5edb6af0bd99e4b578f3913.ctex"
+uid="uid://cx4twurs3ntng"
+path="res://.godot/imported/transitions.png-67bd81bb5ad8b9bda4031000524a91f0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/events/village.png"
-dest_files=["res://.godot/imported/village.png-a5f973f8f5edb6af0bd99e4b578f3913.ctex"]
+source_file="res://assets/tiles/updated/transitions.png"
+dest_files=["res://.godot/imported/transitions.png-67bd81bb5ad8b9bda4031000524a91f0.ctex"]
 
 [params]
 

@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="StoryEventDefinition" load_steps=8 format=3]
 [ext_resource type="Script" path="res://scripts/events/event_definition.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/events/event_choice.gd" id="2"]
-[ext_resource type="Texture2D" path="res://assets/events/forest.png" id="3"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/background_2.png" id="3"]
 [ext_resource type="Texture2D" path="res://assets/events/knight.png" id="4"]
 [sub_resource type="Resource" id="Heal"]
 script = ExtResource("2")
@@ -22,7 +22,7 @@ script = ExtResource("1")
 event_id = "forest_traveller"
 title = "林间偶遇"
 npc_name = "旅人"
-background = ExtResource("3")
+background_id = 2
 portrait = ExtResource("4")
 story = "一位旅人愿意分你一些药膏。山崖下也挂着一个钱袋。你打算怎么做？"
 min_floor = 3

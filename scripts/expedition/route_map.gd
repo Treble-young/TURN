@@ -171,25 +171,13 @@ func _refresh_backpack() -> void:
 	var total := 0
 	for count: int in Expedition.relics.values():
 		total += count
-	backpack_button.tooltip_text = "随身物品：%d 件" % total
+	backpack_button.tooltip_text = "遗物槽位：%d / %d" % [total, Expedition.relic_capacity]
 	if not backpack.visible:
 		return
 	for child in backpack_items.get_children():
 		backpack_items.remove_child(child)
 		child.queue_free()
-	if Expedition.relics.is_empty():
-		backpack_items.add_child(UI.label("还没有获得物品", 16, UI.SOFT))
-		return
-	for id: String in Expedition.relics:
-		var item: Dictionary = Expedition.ITEMS[id]
-		var caption := "%s ×%d" % [item["name"], Expedition.relics[id]]
-		if item.get("rare", false):
-			caption += " · 稀有"
-		var lines := VBoxContainer.new()
-		lines.add_theme_constant_override("separation", 2)
-		lines.add_child(UI.label(caption, 17, UI.GOLD))
-		lines.add_child(UI.label(item["effect"], 15, UI.SOFT))
-		backpack_items.add_child(lines)
+	preload("res://scripts/ui/relic_slots.gd").populate(backpack_items)
 
 func _input(event: InputEvent) -> void:
 	if not is_instance_valid(scroll):

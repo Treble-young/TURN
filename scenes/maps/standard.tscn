@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://elubtlc3me2j"]
 
 [ext_resource type="Script" uid="uid://1lw4m7dlickn" path="res://scripts/maps/battle_map.gd" id="1"]
-[ext_resource type="TileSet" path="res://assets/maps/shared_tileset.tres" id="2"]
+[ext_resource type="TileSet" uid="uid://u4x06cr2msvf" path="res://assets/maps/shared_tileset.tres" id="2"]
 [ext_resource type="Script" uid="uid://dp6i5j1x0hbjn" path="res://scripts/maps/enemy_spawn.gd" id="3"]
 
 [node name="BattleMap" type="Node2D" unique_id=1593032578]

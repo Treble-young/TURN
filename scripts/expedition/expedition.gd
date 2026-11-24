@@ -73,6 +73,8 @@ var level := 1
 var experience := 0
 var total_experience := 0
 var relics: Dictionary = {}
+var relic_capacity := 6
+var story_catalog: Resource
 var event_attack_bonus := 0.0
 var rest_entry_healed := 0.0
 var visited: Array[Vector2i] = []
@@ -110,6 +112,7 @@ func start_run(requested_seed: int = -1, selected_difficulty: int = Difficulty.S
 	experience = 0
 	total_experience = 0
 	relics.clear()
+	relic_capacity = 6
 	event_attack_bonus = 0.0
 	rest_entry_healed = 0.0
 	visited.clear()
@@ -287,6 +290,7 @@ func _heal(amount: float) -> float:
 	return health - before
 
 func _award_item(id: String) -> String:
+	if not can_receive_relic(id): return "背包已满或已持有该唯一遗物"
 	var item: Dictionary = ITEMS[id]
 	relics[id] = int(relics.get(id, 0)) + 1
 	var instant_heal: float = item.get("heal_on_acquire", 0.0)
@@ -302,7 +306,7 @@ func enemy_health_modifier() -> float:
 	return ENEMY_HEALTH_WITH_CURSE if active and node_pending and is_battle(current_kind) and relics.has("frailty_seal") else 1.0
 
 func buy(id: String) -> bool:
-	if not node_pending or current_kind != Kind.SHOP or not offers.has(id):
+	if not node_pending or current_kind != Kind.SHOP or not offers.has(id) or not can_receive_relic(id):
 		return false
 	var price := shop_price(id)
 	if gold < price:
@@ -328,6 +332,13 @@ func complete_rest() -> void:
 		report = "休整完毕 · 共回复 %d 生命" % roundi(rest_entry_healed + healed)
 		node_pending = false
 
+func organize_backpack() -> bool:
+	if not active or not node_pending or current_kind != Kind.REST: return false
+	relic_capacity += 1
+	report = "整理背包 · 遗物槽位 +1，当前容量 %d" % relic_capacity
+	node_pending = false
+	return true
+
 func complete_encounter(take_risk: bool) -> void:
 	if not node_pending or current_kind != Kind.ENCOUNTER:
 		return
@@ -343,8 +354,13 @@ func complete_encounter(take_risk: bool) -> void:
 	node_pending = false
 
 func complete_wish(id: String) -> void:
-	if node_pending and current_kind == Kind.WISH and offers.has(id):
+	if node_pending and current_kind == Kind.WISH and offers.has(id) and can_receive_relic(id):
 		report = "秘藏之地 · 获得%s，%s" % [ITEMS[id]["name"], _award_item(id)]
+		node_pending = false
+
+func leave_wish() -> void:
+	if node_pending and current_kind == Kind.WISH:
+		report = "你没有带走遗物，继续踏上旅途。"
 		node_pending = false
 
 func win_battle(remaining_health: float, progress: ExperienceProgress) -> String:
@@ -367,7 +383,10 @@ func win_battle(remaining_health: float, progress: ExperienceProgress) -> String
 	if rng.randf() < drop_chance(current_kind) or current_kind == Kind.BOSS:
 		var id := _roll_item()
 		if not id.is_empty():
-			result += "\n获得%s · %s" % [ITEMS[id]["name"], _award_item(id)]
+			if can_receive_relic(id):
+				result += "\n获得%s · %s" % [ITEMS[id]["name"], _award_item(id)]
+			else:
+				result += "\n背包已满，无法携带掉落的%s。" % ITEMS[id]["name"]
 	var defeated_boss := current_kind == Kind.BOSS
 	node_pending = false
 	current_kind = -1
@@ -393,19 +412,21 @@ func lose_battle(progress: ExperienceProgress) -> void:
 	won = false
 
 func current_story_event() -> StoryEventDefinition:
-	var catalog = load("res://assets/events/catalog.tres")
-	return catalog.pick(floor_number, run_seed, stage, lane)
+	if story_catalog == null: story_catalog = load("res://assets/events/catalog.tres")
+	return story_catalog.pick(floor_number, run_seed, stage, lane)
 
 func can_choose_event(index: int) -> bool:
 	if not active or not node_pending or current_kind != Kind.ENCOUNTER: return false
 	var event := current_story_event()
 	if event == null or index < 0 or index >= event.choices.size(): return false
 	var choice := event.choices[index]
-	return gold >= choice.gold_cost and (choice.health_cost <= 0.0 or health > choice.health_cost) and (choice.relic_id.is_empty() or (ITEMS.has(choice.relic_id) and not (ITEMS[choice.relic_id].get("unique", false) and relics.has(choice.relic_id))))
+	if choice.exchange_relic: return used_relic_slots() > 0
+	return gold >= choice.gold_cost and (choice.health_cost <= 0.0 or health > choice.health_cost) and (choice.relic_id.is_empty() or can_receive_relic(choice.relic_id))
 
 func choose_event(index: int) -> bool:
 	if not can_choose_event(index): return false
 	var choice := current_story_event().choices[index]
+	if choice.exchange_relic: return false
 	gold += choice.gold_reward - choice.gold_cost
 	health -= choice.health_cost
 	_heal(choice.heal)
@@ -417,4 +438,30 @@ func choose_event(index: int) -> bool:
 		current_kind = Kind.BATTLE
 	else:
 		node_pending = false
+	return true
+
+func used_relic_slots() -> int:
+	var count := 0
+	for amount: int in relics.values(): count += amount
+	return count
+
+func can_receive_relic(id: String) -> bool:
+	return ITEMS.has(id) and used_relic_slots() < relic_capacity and not (ITEMS[id].get("unique", false) and relics.has(id))
+
+func exchange_event_relic(index: int, discarded_id: String) -> bool:
+	if not can_choose_event(index) or not relics.has(discarded_id): return false
+	var choice := current_story_event().choices[index]
+	if not choice.exchange_relic: return false
+	var previous := relics.duplicate()
+	relics[discarded_id] -= 1
+	if relics[discarded_id] <= 0: relics.erase(discarded_id)
+	var excluded: Array[String] = [discarded_id]
+	var received_id := _roll_item(excluded)
+	if received_id.is_empty() or not can_receive_relic(received_id):
+		relics = previous
+		return false
+	var effect := _award_item(received_id)
+	health = minf(health, max_health())
+	report = "你将%s放上天平，它随光芒消失。\n获得%s · %s" % [ITEMS[discarded_id]["name"], ITEMS[received_id]["name"], effect]
+	node_pending = false
 	return true

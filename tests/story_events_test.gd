@@ -3,11 +3,19 @@ extends SceneTree
 func _initialize() -> void:
 	check.call_deferred()
 
+func select_smith(expedition: Node) -> void:
+	expedition.floor_number = 1
+	for seed_value in range(100):
+		expedition.run_seed = seed_value
+		if expedition.current_story_event().event_id == "village_blacksmith": return
+	assert(false)
+
 func check() -> void:
 	var expedition = root.get_node("Expedition")
 	expedition.start_run(1234)
 	expedition.current_kind = expedition.Kind.ENCOUNTER
 	expedition.node_pending = true
+	select_smith(expedition)
 	var smith = expedition.current_story_event()
 	assert(smith.event_id == "village_blacksmith")
 	assert(not expedition.can_choose_event(1))
@@ -22,11 +30,13 @@ func check() -> void:
 	assert(not expedition.can_choose_event(1))
 	for floor_number in range(1, 6):
 		expedition.floor_number = floor_number
-		assert(expedition.current_story_event().event_id == ("village_blacksmith" if floor_number <= 2 else "forest_traveller"))
+		assert(expedition.current_story_event().available_on(floor_number))
+		if floor_number > 2: assert(expedition.current_story_event().event_id != "village_blacksmith")
 	expedition.start_run(1234)
 	assert(expedition.event_attack_bonus == 0.0 and not expedition.relics.has("fine_soft_armor"))
 	expedition.current_kind = expedition.Kind.ENCOUNTER
 	expedition.node_pending = true
+	select_smith(expedition)
 	expedition.gold = 20
 	var scene = load("res://scenes/events/story_event.tscn").instantiate()
 	root.add_child(scene)

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://scripts/events/background_library.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/background_1.png" id="b1"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/background_2.png" id="b2"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/background_3.png" id="b3"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/background_4.png" id="b4"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/background_5.png" id="b5"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/background_6.png" id="b6"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/background_7.png" id="b7"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/background_8.png" id="b8"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/background_9.png" id="b9"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/background_10.png" id="b10"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/background_11.png" id="b11"]
+
+[resource]
+script = ExtResource("1")
+backgrounds = Array[Texture2D]([ExtResource("b1"), ExtResource("b2"), ExtResource("b3"), ExtResource("b4"), ExtResource("b5"), ExtResource("b6"), ExtResource("b7"), ExtResource("b8"), ExtResource("b9"), ExtResource("b10"), ExtResource("b11")])
