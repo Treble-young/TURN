@@ -33,7 +33,7 @@ func _physics_process(delta: float) -> void:
 	var hit := get_world_2d().direct_space_state.intersect_ray(query)
 	if not hit.is_empty():
 		if hit.collider == player:
-			player.take_damage(damage)
+			player.take_damage(damage, true)
 		queue_free()
 		return
 

@@ -45,6 +45,8 @@ var experience_attraction_multiplier := 1.0
 var experience_remainder: int = 0
 var health: float
 var shield := 0.0
+var ranged_damage_multiplier := 1.0
+var try_revive: Callable
 var is_dead: bool = false
 var _hurt_timer: float = 0.0
 var _attack_hit: bool = false
@@ -267,14 +269,20 @@ func set_shield(value: float) -> void:
 	shield = maxf(0.0, value)
 	shield_changed.emit(shield)
 
-func take_damage(amount: float) -> void:
+func take_damage(amount: float, ranged: bool = false) -> void:
 	if is_dead or combat_locked or is_transforming or _hurt_timer > 0 or amount <= 0:
 		return
+	# 远程减伤先结算，护盾承受减免后的伤害。
+	if ranged:
+		amount *= ranged_damage_multiplier
 	var absorbed := minf(amount, shield)
 	if absorbed > 0.0:
 		set_shield(shield - absorbed)
 	health = maxf(0.0, health - (amount - absorbed))
 	_hurt_timer = hurt_invulnerability
+	# 在进入死亡状态和关闭碰撞前复活，保留本场战斗状态。
+	if health <= 0.0 and try_revive.is_valid() and try_revive.call():
+		health = max_health * 0.5
 	health_changed.emit(health, max_health)
 	if health <= 0:
 		is_dead = true

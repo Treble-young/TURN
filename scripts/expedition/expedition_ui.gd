@@ -6,6 +6,19 @@ const SOFT := Color("#c8ad89")
 const BACKGROUND := Color("#20191a")
 const PANEL := Color("#2b2120")
 const BORDER := Color("#674837")
+const RELIC_ICONS := preload("res://assets/ui/relics/icons.png")
+const RELIC_ICON_SIZE := 128
+const RELIC_ICON_COLUMNS := 4
+
+static func relic_icon(id: String) -> AtlasTexture:
+	var index: int = Expedition.ITEMS[id]["icon"]
+	@warning_ignore("integer_division")
+	var cell := Vector2i(index % RELIC_ICON_COLUMNS, index / RELIC_ICON_COLUMNS)
+	var result := AtlasTexture.new()
+	result.atlas = RELIC_ICONS
+	result.region = Rect2(Vector2(cell * RELIC_ICON_SIZE), Vector2.ONE * RELIC_ICON_SIZE)
+	result.filter_clip = true
+	return result
 
 static func make_theme() -> Theme:
 	var result := Theme.new()

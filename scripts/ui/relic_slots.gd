@@ -16,11 +16,21 @@ static func populate(parent: VBoxContainer, on_select: Callable = Callable()) ->
 	for index in range(Expedition.relic_capacity):
 		var id := entries[index] if index < entries.size() else ""
 		var slot := Button.new()
-		slot.custom_minimum_size = Vector2(102, 69)
+		slot.custom_minimum_size = Vector2(102, 76)
 		slot.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		slot.add_theme_font_size_override("font_size", 15)
-		slot.text = "%d\n%s" % [index + 1, "空槽位" if id.is_empty() else Expedition.ITEMS[id]["name"]]
-		slot.tooltip_text = "空槽位" if id.is_empty() else Expedition.ITEMS[id]["effect"]
+		if id.is_empty():
+			slot.text = "%d\n空槽位" % (index + 1)
+			slot.tooltip_text = "空槽位"
+		else:
+			var item: Dictionary = Expedition.ITEMS[id]
+			slot.text = item["name"]
+			slot.tooltip_text = "%s\n%s" % [item["name"], item["effect"]]
+			slot.icon = UI.relic_icon(id)
+			slot.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			slot.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+			slot.add_theme_constant_override("icon_max_width", 38)
+			slot.add_theme_constant_override("h_separation", 4)
 		if on_select.is_valid() and not id.is_empty():
 			slot.pressed.connect(on_select.bind(id))
 			slot.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND

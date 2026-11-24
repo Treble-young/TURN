@@ -63,6 +63,8 @@ func _refresh() -> void:
 		body.add_child(UI.action("返回路线图", _return_to_map))
 		return
 	body.add_child(UI.label(INTRO[kind]))
+	if Expedition.pilgrim_entry_healed > 0.0:
+		body.add_child(UI.label("旅露圣杯 · 已恢复 %s 点生命" % str(snappedf(Expedition.pilgrim_entry_healed, 0.01)), 16, UI.GOLD))
 	match kind:
 		Expedition.Kind.SHOP:
 			if Expedition.relics.has("merchant_pass"):
@@ -73,6 +75,8 @@ func _refresh() -> void:
 				body.add_child(UI.label(Expedition.report, 15, UI.GOLD))
 			body.add_child(UI.action("离开商人", _leave_shop))
 		Expedition.Kind.REST:
+			if Expedition.relics.has("traveler_ink"):
+				body.add_child(UI.label("旅人墨契 · 已获得 %d 金币" % Expedition.TRAVELER_GOLD, 16, UI.GOLD))
 			if Expedition.rest_entry_healed > 0.0:
 				body.add_child(UI.label("营火药囊已恢复 %d 点生命。" % roundi(Expedition.rest_entry_healed), 16, UI.GOLD))
 			body.add_child(UI.label("本次休息可恢复 %d 点生命。" % roundi(Expedition.rest_heal_amount()), 16, UI.GOLD))
@@ -94,6 +98,14 @@ func _item_row(id: String, for_sale: bool) -> void:
 	var item: Dictionary = Expedition.ITEMS[id]
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
+	var icon := TextureRect.new()
+	icon.texture = UI.relic_icon(id)
+	icon.custom_minimum_size = Vector2(44, 44)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(icon)
 	var name: String = item["name"]
 	if item.get("rare", false):
 		name += " · 稀有"

@@ -48,8 +48,10 @@ func _ready() -> void:
 	player.enhanced_light_blade = Expedition.relics.has("light_blade")
 	player.light_blade_range *= 1.0 + 0.25 * int(Expedition.relics.get("light_range", 0))
 	player.light_blade_extra_hits = int(Expedition.relics.get("light_pierce", 0))
-	player.move_speed = Expedition.speed()
+	player.move_speed = Expedition.BASE_SPEED
 	player.health = Expedition.health
+	player.ranged_damage_multiplier = 0.85 if Expedition.relics.has("stone_bracer") else 1.0
+	player.try_revive = Expedition.try_use_revival
 	player.experience_efficiency_percent = Expedition.EXPERIENCE_PERCENT[Expedition.difficulty]
 	player.experience_attraction_multiplier = 1.5 if Expedition.relics.has("soul_lantern") else 1.0
 	player.experience_remainder = Expedition.experience_remainder

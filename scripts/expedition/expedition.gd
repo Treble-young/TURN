@@ -22,6 +22,8 @@ const HEALTH_PER_LEVEL := 4.0
 const DAMAGE_PER_LEVEL := 2.0
 const REST_HEAL_FRACTION := 0.35
 const REST_ENTRY_BONUS := 12.0
+const TRAVELER_GOLD := 8
+const PILGRIM_HEAL := 2.0
 const SHOP_DISCOUNT := 0.70
 const ENEMY_HEALTH_WITH_CURSE := 0.85
 const COMMON_ITEM_WEIGHT := 10
@@ -35,34 +37,41 @@ const KIND_DETAILS := [
 	"清除一波敌人。战胜后获得金币，并有机会获得物品。",
 	"迎战两波更强的敌人，获得更多经验和金币。",
 	"击败本层首领，必定获得一件物品。",
-	"用金币购买物品，获得攻击、生命、移动或金币收益等增益。可以购买多件，也可以直接离开。",
+	"用金币购买物品，获得攻击、生命、护盾或金币收益等增益。可以购买多件，也可以直接离开。",
 	"在营火旁休息可以恢复生命值。",
 	"邂逅不同的人物并作出选择。事件随层数变化，部分选择可能触发战斗。",
 	"石龛会出现两件物品。任选一件免费带走。",
 ]
+# icon 按图集从左到右、从上到下编号。
 const ITEMS := {
-	"fine_soft_armor": {"name": "精良软甲", "effect": "战斗中每次形态切换完成后，获得 5 点护盾。", "price": 16, "unique": true, "event_only": true},
-	"light_range": {"name": "长辉棱镜", "effect": "光刃射程 +25%（可叠加）", "price": 20},
-	"light_pierce": {"name": "贯光符印", "effect": "光刃可额外命中 1 个敌人（可叠加）", "price": 24},
-	"light_blade": {"name": "辉光刻印", "effect": "光刃强化：伤害 +50%，最多命中三个敌人（重复获取不叠加）", "price": 28},
-	"blade": {"name": "磨锋石", "effect": "攻击伤害 +4", "price": 18},
-	"heart": {"name": "琥珀护符", "effect": "生命上限 +12，并回复 12 生命", "price": 22, "max_health": 12, "heal_on_acquire": 12},
-	"boots": {"name": "巡路靴", "effect": "移动速度 +20", "price": 17},
-	"coin": {"name": "旧王钱币", "effect": "每场胜利额外获得 3 金币", "price": 16},
-	"victory_badge": {"name": "凯旋徽章", "effect": "战斗胜利获得的金币 +20%，向上取整。", "price": 22, "unique": true},
-	"lesser_vitality": {"name": "青芽符", "effect": "生命上限 +8（可叠加）", "price": 12, "max_health": 8},
-	"greater_vitality": {"name": "生息符", "effect": "生命上限 +16（可叠加）", "price": 20, "max_health": 16, "weight": 8},
-	"supreme_vitality": {"name": "长生符", "effect": "生命上限 +28（可叠加）", "price": 30, "max_health": 28, "weight": 6},
-	"eclipse_shield": {"name": "日蚀护镜", "effect": "开战获得最大生命 30% 的护盾。每次切换光影形态补充当时生命 10% 的护盾，战斗结束后清空。", "price": 32, "rare": true, "unique": true},
-	"merchant_pass": {"name": "行商契约", "effect": "持有时，商店内所有商品按原价七折出售。", "price": 30, "rare": true, "unique": true},
-	"camp_kit": {"name": "营火药囊", "effect": "进入休憩之所时立刻额外恢复 12 点生命。", "price": 20, "unique": true},
-	"frailty_seal": {"name": "衰弱印记", "effect": "战斗中所有敌人的最大生命值降低 15%。", "price": 27, "unique": true},
-	"soul_lantern": {"name": "引魂灯", "effect": "经验球吸附范围 +50%。", "price": 19, "unique": true},
+	"fine_soft_armor": {"icon": 0, "name": "精良软甲", "effect": "战斗中每次形态切换完成后，获得 5 点护盾。", "price": 16, "unique": true, "event_only": true},
+	"light_range": {"icon": 1, "name": "长辉棱镜", "effect": "光刃射程 +25%（可叠加）", "price": 20},
+	"light_pierce": {"icon": 2, "name": "贯光符印", "effect": "光刃可额外命中 1 个敌人（可叠加）", "price": 24},
+	"light_blade": {"icon": 3, "name": "辉光刻印", "effect": "光刃强化：伤害 +50%，最多命中三个敌人（重复获取不叠加）", "price": 28},
+	"blade": {"icon": 4, "name": "磨锋石", "effect": "攻击伤害 +4", "price": 18},
+	"heart": {"icon": 5, "name": "琥珀护符", "effect": "生命上限 +12，并回复 12 生命", "price": 22, "max_health": 12, "heal_on_acquire": 12},
+	"coin": {"icon": 6, "name": "旧王钱币", "effect": "每场胜利额外获得 3 金币", "price": 16},
+	"victory_badge": {"icon": 7, "name": "凯旋徽章", "effect": "战斗胜利获得的金币 +20%，向上取整。", "price": 22, "unique": true},
+	"lesser_vitality": {"icon": 8, "name": "青芽符", "effect": "生命上限 +8（可叠加）", "price": 12, "max_health": 8},
+	"greater_vitality": {"icon": 9, "name": "生息符", "effect": "生命上限 +16（可叠加）", "price": 20, "max_health": 16, "weight": 8},
+	"supreme_vitality": {"icon": 10, "name": "长生符", "effect": "生命上限 +28（可叠加）", "price": 30, "max_health": 28, "weight": 6},
+	"eclipse_shield": {"icon": 11, "name": "日蚀护镜", "effect": "开战获得最大生命 30% 的护盾。每次切换光影形态补充当时生命 10% 的护盾，战斗结束后清空。", "price": 32, "rare": true, "unique": true},
+	"merchant_pass": {"icon": 12, "name": "行商契约", "effect": "持有时，商店内所有商品按原价七折出售。", "price": 30, "rare": true, "unique": true},
+	"camp_kit": {"icon": 13, "name": "营火药囊", "effect": "进入休憩之所时立刻额外恢复 12 点生命。", "price": 20, "unique": true},
+	"frailty_seal": {"icon": 14, "name": "衰弱印记", "effect": "战斗中所有敌人的最大生命值降低 15%。", "price": 27, "unique": true},
+	"soul_lantern": {"icon": 15, "name": "引魂灯", "effect": "经验球吸附范围 +50%。", "price": 19, "unique": true},
+	"stone_bracer": {"icon": 16, "name": "断石臂环", "effect": "受到远程攻击时，伤害降低 15%。", "price": 22, "unique": true},
+	"homeward_ember": {"icon": 17, "name": "归途火种", "effect": "赢得强敌试炼后，恢复 8 点生命。", "price": 21, "unique": true},
+	"salvage_die": {"icon": 18, "name": "拾遗骰", "effect": "每层第一次普通战斗未掉落遗物时，按原概率重投一次。", "price": 24, "unique": true},
+	"traveler_ink": {"icon": 19, "name": "旅人墨契", "effect": "每层首次完成事件以及每次进入休憩之所时，额外获得 8 金币。", "price": 22, "unique": true},
+	"phoenix_feather": {"icon": 20, "name": "不死鸟之羽", "effect": "本次远征首次触发致命伤时，以最大生命值的 50% 复活。仅可触发一次。", "price": 42, "rare": true, "weight": 1, "unique": true},
+	"pilgrim_chalice": {"icon": 21, "name": "旅露圣杯", "effect": "每次进入非战斗节点时，恢复 2 点生命。", "price": 34, "rare": true, "weight": 1, "unique": true},
 }
 
 var rng := RandomNumberGenerator.new()
 var maps: Array = []
 var crossings: Array[Array] = []
+var lateral_crossings: Array[Array] = []
 var run_seed := 0
 var floor_number := 1
 var stage := -1
@@ -77,6 +86,11 @@ var relic_capacity := 6
 var story_catalog: Resource
 var event_attack_bonus := 0.0
 var rest_entry_healed := 0.0
+var pilgrim_entry_healed := 0.0
+var revival_spent := false
+var salvage_used_floor := 0
+var traveler_rewarded_floor := 0
+var event_battle_pending := false
 var visited: Array[Vector2i] = []
 var offers: Array[String] = []
 var current_kind: int = -1
@@ -97,10 +111,15 @@ func start_run(requested_seed: int = -1, selected_difficulty: int = Difficulty.S
 	rng.seed = run_seed
 	maps.clear()
 	crossings.clear()
+	lateral_crossings.clear()
+	# 横向连线使用独立随机序列，避免相同种子的原有节点和斜向连线发生变化。
+	var lateral_rng := RandomNumberGenerator.new()
+	lateral_rng.seed = run_seed ^ 0x6d28a439
 	for _floor_index in range(FLOOR_COUNT):
 		var rows := _generate_floor()
 		maps.append(rows)
 		crossings.append(_generate_crossings(rows))
+		lateral_crossings.append(_generate_lateral_crossings(rows, lateral_rng))
 	var library = load("res://assets/maps/map_library.tres")
 	assigned_levels = library.assign_levels(maps, run_seed)
 	floor_number = 1
@@ -115,6 +134,11 @@ func start_run(requested_seed: int = -1, selected_difficulty: int = Difficulty.S
 	relic_capacity = 6
 	event_attack_bonus = 0.0
 	rest_entry_healed = 0.0
+	pilgrim_entry_healed = 0.0
+	revival_spent = false
+	salvage_used_floor = 0
+	traveler_rewarded_floor = 0
+	event_battle_pending = false
 	visited.clear()
 	offers.clear()
 	current_kind = -1
@@ -192,6 +216,26 @@ func _shuffle(values: Array) -> void:
 		values[index] = values[other]
 		values[other] = value
 
+## 每个完整行至多选一对相邻列，用（行号，左列）表示双向连接。
+func _generate_lateral_crossings(rows: Array, route_rng: RandomNumberGenerator) -> Array[Vector2i]:
+	var eligible: Array[int] = []
+	for row in rows.size():
+		if rows[row].size() == LANE_COUNT and not rows[row].has(EMPTY_NODE):
+			eligible.append(row)
+	var result: Array[Vector2i] = []
+	for _index in mini(route_rng.randi_range(3, 4), eligible.size()):
+		var index := route_rng.randi_range(0, eligible.size() - 1)
+		result.append(Vector2i(eligible.pop_at(index), route_rng.randi_range(0, LANE_COUNT - 2)))
+	return result
+
+func has_lateral_route(row: int, from_lane: int, to_lane: int) -> bool:
+	if not node_exists_at(row, from_lane) or not node_exists_at(row, to_lane):
+		return false
+	var slots: Array = current_map()[row]
+	if slots.size() != LANE_COUNT or slots.has(EMPTY_NODE):
+		return false
+	return absi(from_lane - to_lane) == 1 and lateral_crossings[floor_number - 1].has(Vector2i(row, mini(from_lane, to_lane)))
+
 func current_map() -> Array:
 	return maps[floor_number - 1]
 
@@ -215,9 +259,11 @@ func has_crossing(from_stage: int, from_lane: int) -> bool:
 	return false
 
 func can_reach(to_stage: int, to_lane: int) -> bool:
-	if not active or node_pending or to_stage != stage + 1 or not node_exists_at(to_stage, to_lane):
+	if not active or node_pending or not node_exists_at(to_stage, to_lane) or visited.has(Vector2i(to_stage, to_lane)):
 		return false
-	return stage < 0 or has_route(lane, to_stage, to_lane)
+	if to_stage == stage:
+		return has_lateral_route(stage, lane, to_lane)
+	return to_stage == stage + 1 and (stage < 0 or has_route(lane, to_stage, to_lane))
 
 func enter_node(to_stage: int, to_lane: int) -> bool:
 	if not can_reach(to_stage, to_lane):
@@ -229,6 +275,13 @@ func enter_node(to_stage: int, to_lane: int) -> bool:
 	node_pending = true
 	report = ""
 	rest_entry_healed = 0.0
+	pilgrim_entry_healed = 0.0
+	event_battle_pending = false
+	# 入场奖励在节点确认时发放，因此休息或整理背包都能享受同一份奖励。
+	if not is_battle(current_kind) and relics.has("pilgrim_chalice"):
+		pilgrim_entry_healed = _heal(PILGRIM_HEAL)
+	if current_kind == Kind.REST and relics.has("traveler_ink"):
+		gold += TRAVELER_GOLD
 	offers.clear()
 	if current_kind == Kind.SHOP or current_kind == Kind.WISH:
 		var count := 3 if current_kind == Kind.SHOP else 2
@@ -256,9 +309,6 @@ func max_health(at_level: int = 0) -> float:
 func damage(at_level: int) -> float:
 	return event_attack_bonus + BASE_DAMAGE + (at_level - 1) * DAMAGE_PER_LEVEL + 4.0 * relics.get("blade", 0)
 
-func speed() -> float:
-	return BASE_SPEED + 20.0 * relics.get("boots", 0)
-
 func drop_chance(kind: int) -> float:
 	if kind == Kind.BOSS:
 		return 1.0
@@ -270,9 +320,9 @@ func _roll_item(excluded: Array[String] = []) -> String:
 	var total_weight := 0
 	for id: String in ITEMS:
 		var item: Dictionary = ITEMS[id]
-		if item.get("event_only", false) or excluded.has(id) or (item.get("unique", false) and relics.has(id)):
+		if item.get("event_only", false) or excluded.has(id) or _unique_relic_unavailable(id):
 			continue
-		var weight: int = RARE_ITEM_WEIGHT if item.get("rare", false) else item.get("weight", COMMON_ITEM_WEIGHT)
+		var weight: int = item.get("weight", RARE_ITEM_WEIGHT if item.get("rare", false) else COMMON_ITEM_WEIGHT)
 		weights[id] = weight
 		total_weight += weight
 	if total_weight <= 0:
@@ -351,6 +401,7 @@ func complete_encounter(take_risk: bool) -> void:
 		report = "接受旅人的药膏 · 回复 %d 生命" % roundi(healed)
 	else:
 		return
+	report += _reward_event_completion()
 	node_pending = false
 
 func complete_wish(id: String) -> void:
@@ -380,13 +431,28 @@ func win_battle(remaining_health: float, progress: ExperienceProgress) -> String
 		earned = ceili(earned * 1.20)
 	gold += earned
 	var result := "获得 %d 金币" % earned
-	if rng.randf() < drop_chance(current_kind) or current_kind == Kind.BOSS:
+	if current_kind == Kind.ELITE and relics.has("homeward_ember"):
+		var healed := _heal(8.0)
+		if healed > 0.0:
+			result += "\n归途火种 · 回复 %s 生命" % str(snappedf(healed, 0.01))
+	var drop_probability := drop_chance(current_kind)
+	var dropped := rng.randf() < drop_probability or current_kind == Kind.BOSS
+	# 首次普通节点掉落判定失败时消耗本层重投机会，沿用原概率。
+	if not dropped and current_kind == Kind.BATTLE and not event_battle_pending and salvage_used_floor != floor_number and relics.has("salvage_die"):
+		salvage_used_floor = floor_number
+		dropped = rng.randf() < drop_probability
+		result += "\n拾遗骰 · 已重投本场遗物掉落"
+	if dropped:
 		var id := _roll_item()
 		if not id.is_empty():
 			if can_receive_relic(id):
 				result += "\n获得%s · %s" % [ITEMS[id]["name"], _award_item(id)]
 			else:
 				result += "\n背包已满，无法携带掉落的%s。" % ITEMS[id]["name"]
+	# 战斗型事件通关后才算完成，因此墨契奖励在此结算。
+	if event_battle_pending:
+		result += _reward_event_completion()
+		event_battle_pending = false
 	var defeated_boss := current_kind == Kind.BOSS
 	node_pending = false
 	current_kind = -1
@@ -436,7 +502,9 @@ func choose_event(index: int) -> bool:
 	if choice.battle_map != null:
 		get_tree().set_meta("battle_map_override", choice.battle_map.resource_path)
 		current_kind = Kind.BATTLE
+		event_battle_pending = true
 	else:
+		report += _reward_event_completion()
 		node_pending = false
 	return true
 
@@ -446,7 +514,25 @@ func used_relic_slots() -> int:
 	return count
 
 func can_receive_relic(id: String) -> bool:
-	return ITEMS.has(id) and used_relic_slots() < relic_capacity and not (ITEMS[id].get("unique", false) and relics.has(id))
+	return ITEMS.has(id) and used_relic_slots() < relic_capacity and not _unique_relic_unavailable(id)
+
+func _unique_relic_unavailable(id: String) -> bool:
+	return (id == "phoenix_feather" and revival_spent) or (ITEMS[id].get("unique", false) and relics.has(id))
+
+## 由玩家受致命伤时调用。消耗遗物，并记录本轮远征已复活。
+func try_use_revival() -> bool:
+	if not active or not node_pending or not is_battle(current_kind) or revival_spent or not relics.has("phoenix_feather"):
+		return false
+	revival_spent = true
+	relics.erase("phoenix_feather")
+	return true
+
+func _reward_event_completion() -> String:
+	if traveler_rewarded_floor == floor_number or not relics.has("traveler_ink"):
+		return ""
+	traveler_rewarded_floor = floor_number
+	gold += TRAVELER_GOLD
+	return "\n旅人墨契 · 获得 %d 金币" % TRAVELER_GOLD
 
 func exchange_event_relic(index: int, discarded_id: String) -> bool:
 	if not can_choose_event(index) or not relics.has(discarded_id): return false
@@ -463,5 +549,6 @@ func exchange_event_relic(index: int, discarded_id: String) -> bool:
 	var effect := _award_item(received_id)
 	health = minf(health, max_health())
 	report = "你将%s放上天平，它随光芒消失。\n获得%s · %s" % [ITEMS[discarded_id]["name"], ITEMS[received_id]["name"], effect]
+	report += _reward_event_completion()
 	node_pending = false
 	return true

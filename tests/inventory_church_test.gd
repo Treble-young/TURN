@@ -23,18 +23,19 @@ func check() -> void:
 	var expedition = root.get_node("Expedition")
 	expedition.start_run(1234)
 	assert(expedition.relic_capacity == 6)
+	assert(not expedition.ITEMS.has("boots") and not expedition.can_receive_relic("boots"))
 	for index in range(6): expedition._award_item("blade")
 	assert(expedition.used_relic_slots() == 6 and expedition.damage(1) == 42)
-	expedition._award_item("boots")
-	assert(not expedition.relics.has("boots"))
+	expedition._award_item("light_range")
+	assert(not expedition.relics.has("light_range"))
 	expedition.current_kind = expedition.Kind.SHOP
 	expedition.node_pending = true
-	expedition.offers.assign(["boots"])
+	expedition.offers.assign(["light_range"])
 	expedition.gold = 100
-	assert(not expedition.buy("boots") and expedition.gold == 100)
+	assert(not expedition.buy("light_range") and expedition.gold == 100)
 	expedition.current_kind = expedition.Kind.WISH
-	expedition.complete_wish("boots")
-	assert(expedition.node_pending and not expedition.relics.has("boots"))
+	expedition.complete_wish("light_range")
+	assert(expedition.node_pending and not expedition.relics.has("light_range"))
 	expedition.leave_wish()
 	assert(not expedition.node_pending)
 	expedition.current_kind = expedition.Kind.BOSS
@@ -49,16 +50,16 @@ func check() -> void:
 	expedition.current_kind = expedition.Kind.REST
 	assert(expedition.organize_backpack())
 	assert(expedition.relic_capacity == 7 and not expedition.organize_backpack())
-	assert(expedition.can_receive_relic("boots"))
-	expedition._award_item("boots")
+	assert(expedition.can_receive_relic("light_range"))
+	expedition._award_item("light_range")
 	assert(expedition.used_relic_slots() == 7)
 	select_event(expedition, "ruined_church")
 	assert(expedition.can_choose_event(0))
 	var gold_before: int = expedition.gold
 	assert(not expedition.choose_event(0))
 	assert(not expedition.exchange_event_relic(0, "not_owned"))
-	assert(expedition.exchange_event_relic(0, "boots"))
-	assert(expedition.used_relic_slots() == 7 and not expedition.relics.has("boots"))
+	assert(expedition.exchange_event_relic(0, "light_range"))
+	assert(expedition.used_relic_slots() == 7 and not expedition.relics.has("light_range"))
 	assert(expedition.gold == gold_before)
 	assert(not expedition.exchange_event_relic(0, "blade"))
 	for number in range(1, 6):
@@ -95,7 +96,7 @@ func check() -> void:
 	current_scene = church
 	await capture("church_empty_preview")
 	assert(church.choices.get_child(0).disabled)
-	for id in ["blade", "boots", "heart", "coin", "camp_kit", "fine_soft_armor"]: expedition._award_item(id)
+	for id in ["blade", "light_range", "heart", "coin", "camp_kit", "fine_soft_armor"]: expedition._award_item(id)
 	church._refresh_choices()
 	assert(not church.choices.get_child(0).disabled)
 	church.shared_header._open_backpack()

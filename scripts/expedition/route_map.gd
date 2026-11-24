@@ -220,26 +220,35 @@ func _draw_map() -> void:
 			for to_lane in rows[row].size():
 				if Expedition.has_route(from_lane, row, to_lane):
 					_draw_link(row, from_lane, to_lane)
+	for crossing: Vector2i in Expedition.lateral_crossings[Expedition.floor_number - 1]:
+		_draw_link(crossing.x, crossing.y, crossing.y + 1, true)
 
-func _draw_link(row: int, from_lane: int, to_lane: int) -> void:
-	var from := _point(row - 1, from_lane)
+func _draw_link(row: int, from_lane: int, to_lane: int, lateral: bool = false) -> void:
+	var from_row := row if lateral else row - 1
+	var from := _point(from_row, from_lane)
 	var destination := _point(row, to_lane)
-	var previous := Expedition.visited.has(Vector2i(row - 1, from_lane))
-	var followed := previous and Expedition.visited.has(Vector2i(row, to_lane))
-	var next := previous and Expedition.can_reach(row, to_lane)
+	var from_index := Expedition.visited.find(Vector2i(from_row, from_lane))
+	var to_index := Expedition.visited.find(Vector2i(row, to_lane))
+	# 同排可经过两个节点，只有访问顺序相邻的两端才算走过这条连线。
+	var followed := from_index >= 0 and to_index >= 0 and (to_index == from_index + 1 or (lateral and from_index == to_index + 1))
+	var next := Expedition.stage == from_row and Expedition.lane == from_lane and Expedition.can_reach(row, to_lane)
+	if lateral and Expedition.stage == row and Expedition.lane == to_lane:
+		next = Expedition.can_reach(row, from_lane)
 	var crosses := row < Expedition.STAGE_COUNT - 1 and from_lane != to_lane
-	var color := Color("#906135") if crosses else Color("#a17a54")
+	var color := Color("#44736a") if lateral else (Color("#906135") if crosses else Color("#a17a54"))
 	var thickness := 1.8
 	if followed:
 		color = Color("#553627")
 		thickness = 3.8
 	elif next:
-		color = Color("#744125")
+		color = Color("#285d50") if lateral else Color("#744125")
 		thickness = 2.8
 	var lift := Vector2(0.0, (from.y - destination.y) * 0.50)
 	var sway := Vector2.ZERO
 	if absf(from.x - destination.x) < 65.0:
 		sway.x = 55.0 if (row + from_lane) % 2 == 0 else -55.0
+	if lateral:
+		sway.y = -61.0
 	var curve := Curve2D.new()
 	curve.bake_interval = 4.0
 	curve.add_point(from, Vector2.ZERO, sway - lift)
@@ -377,7 +386,8 @@ func _preview_node() -> void:
 	elif not Expedition.can_reach(selected.x, selected.y):
 		travel_controls.add_child(UI.label("当前路线无法抵达此节点", 16, UI.SOFT))
 	else:
-		travel_controls.add_child(UI.action("确认前往", _confirm_node))
+		var action := "确认换列并进入" if selected.x == Expedition.stage else "确认前往"
+		travel_controls.add_child(UI.action(action, _confirm_node))
 
 func _preview_battle(kind: int) -> void:
 	var library = load("res://assets/maps/map_library.tres")
