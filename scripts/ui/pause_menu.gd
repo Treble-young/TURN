@@ -5,6 +5,7 @@ signal closed
 
 var panel: Control
 var resume_button: Button
+var seed_value: Label
 var window_options: OptionButton
 var volume_sliders: Dictionary = {}
 
@@ -25,6 +26,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 func pause_game() -> void:
+	seed_value.text = "种子：%d" % Expedition.run_seed if not main_menu_mode and not Expedition.maps.is_empty() else "种子：开始游戏时确定"
 	panel.show()
 	get_tree().paused = true
 	resume_button.grab_focus()
@@ -68,7 +70,7 @@ func _build_menu() -> void:
 	card.add_theme_stylebox_override("panel", style)
 	center.add_child(card)
 	var list := VBoxContainer.new()
-	list.add_theme_constant_override("separation", 16)
+	list.add_theme_constant_override("separation", 12)
 	card.add_child(list)
 	var title := Label.new()
 	title.text = "选项设置" if main_menu_mode else "游戏暂停"
@@ -92,6 +94,12 @@ func _build_menu() -> void:
 		Settings.save_settings()
 	)
 	list.add_child(window_options)
+	seed_value = Label.new()
+	seed_value.name = "RunSeed"
+	seed_value.text = "种子：开始游戏时确定"
+	seed_value.add_theme_font_size_override("font_size", 16)
+	seed_value.add_theme_color_override("font_color", Color("e5c68b"))
+	list.add_child(seed_value)
 	if Settings.is_editor_embedded():
 		var hint := Label.new()
 		hint.text = "当前为编辑器内嵌预览，窗口设置将在独立运行时生效。\n测试窗口大小：关闭“下次运行时嵌入游戏”后重新运行。"

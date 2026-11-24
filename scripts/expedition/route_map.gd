@@ -33,7 +33,7 @@ var details: VBoxContainer
 var travel_controls: VBoxContainer
 var selected := Vector2i(-1, -1)
 var node_buttons: Dictionary = {}
-var header_stats: Label
+var shared_header: Control
 var backpack_button: Button
 var backpack: PanelContainer
 var backpack_items: VBoxContainer
@@ -66,31 +66,10 @@ func _draw() -> void:
 	draw_line(Vector2(0, HEADER_HEIGHT - 1), Vector2(size.x, HEADER_HEIGHT - 1), UI.BORDER)
 
 func _build_header() -> void:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 14)
-	add_child(row)
-	row.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	row.offset_left = 26
-	row.offset_right = -26
-	row.offset_top = 0
-	row.offset_bottom = HEADER_HEIGHT
-	var heading := UI.label("远征路线", 26, UI.GOLD)
-	heading.autowrap_mode = TextServer.AUTOWRAP_OFF
-	heading.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	row.add_child(heading)
-	var gap := Control.new()
-	gap.custom_minimum_size.x = 22
-	row.add_child(gap)
-	header_stats = UI.label("", 16)
-	header_stats.autowrap_mode = TextServer.AUTOWRAP_OFF
-	header_stats.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header_stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	header_stats.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	row.add_child(header_stats)
-	backpack_button = UI.action("背包", _toggle_backpack)
-	backpack_button.custom_minimum_size = Vector2(100, 35)
-	backpack_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	row.add_child(backpack_button)
+	shared_header = preload("res://scripts/ui/expedition_header.gd").new()
+	add_child(shared_header)
+	backpack_button = shared_header.backpack_button
+	shared_header.backpack_pressed.connect(_toggle_backpack)
 
 func _build_canvas() -> void:
 	scroll = ScrollContainer.new()
@@ -181,6 +160,7 @@ func _build_backpack() -> void:
 	backpack_items.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	backpack_items.add_theme_constant_override("separation", 9)
 	item_scroll.add_child(backpack_items)
+	backpack.z_index = 20
 	backpack.hide()
 
 func _toggle_backpack() -> void:
@@ -191,7 +171,7 @@ func _refresh_backpack() -> void:
 	var total := 0
 	for count: int in Expedition.relics.values():
 		total += count
-	backpack_button.text = "背包 · %d" % total
+	backpack_button.tooltip_text = "随身物品：%d 件" % total
 	if not backpack.visible:
 		return
 	for child in backpack_items.get_children():
@@ -369,10 +349,7 @@ func _close_preview() -> void:
 	_update_details()
 
 func _update_details() -> void:
-	header_stats.text = "第 %d / %d 层      生命 %d / %d      金币 %d      等级 %d      经验 %d      种子 %d" % [
-		Expedition.floor_number, Expedition.FLOOR_COUNT, roundi(Expedition.health), roundi(Expedition.max_health()),
-		Expedition.gold, Expedition.level, Expedition.total_experience, Expedition.run_seed,
-	]
+	shared_header.refresh()
 	_refresh_backpack()
 	for section in [details, travel_controls]:
 		for child in section.get_children():

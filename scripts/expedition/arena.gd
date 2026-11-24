@@ -85,8 +85,8 @@ func _ready() -> void:
 		_add_label(definition.display_name, Vector2(42, 82), Vector2(650, 22), 14, TEXT)
 	player.health_changed.connect(_update_health)
 	player.shield_changed.connect(_update_shield)
+	player.form_changed.connect(_replenish_shield)
 	if Expedition.relics.has("eclipse_shield"):
-		player.form_changed.connect(_replenish_shield)
 		player.set_shield(player.max_health * START_SHIELD_RATIO)
 	player.died.connect(_defeat)
 	progress.experience_changed.connect(_update_experience)
@@ -166,7 +166,9 @@ func _level_up(new_level: int) -> void:
 
 func _replenish_shield(_form: int) -> void:
 	if not collecting and not finished and not player.is_dead:
-		player.set_shield(player.shield + player.health * FORM_SHIELD_RATIO)
+		var gain := player.health * FORM_SHIELD_RATIO if Expedition.relics.has("eclipse_shield") else 0.0
+		if Expedition.relics.has("fine_soft_armor"): gain += 5.0
+		if gain > 0.0: player.set_shield(player.shield + gain)
 
 func _victory() -> void:
 	finished = true

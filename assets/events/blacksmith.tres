@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="StoryEventDefinition" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/events/event_definition.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/events/event_choice.gd" id="2"]
+[ext_resource type="Texture2D" path="res://assets/events/village.png" id="3"]
+[ext_resource type="Texture2D" path="res://assets/events/blacksmith.png" id="4"]
+
+[sub_resource type="Resource" id="Polish"]
+script = ExtResource("2")
+text = "让铁匠帮忙打磨自己的武器\n金币 −12 · 攻击 +3"
+gold_cost = 12
+attack_bonus = 3.0
+result_text = "铁匠仔细打磨了你的武器，锋刃焕然一新。\n失去 12 金币，攻击 +3。"
+
+[sub_resource type="Resource" id="Armor"]
+script = ExtResource("2")
+text = "购买盔甲架上的装备\n金币 −16 · 获得遗物：精良软甲"
+gold_cost = 16
+relic_id = "fine_soft_armor"
+result_text = "你穿上了精良软甲。\n战斗中每次形态切换完成后，获得 5 点护盾。"
+
+[sub_resource type="Resource" id="Leave"]
+script = ExtResource("2")
+text = "转身离开"
+result_text = "你向忙碌的铁匠告别，继续踏上旅途。"
+
+[resource]
+script = ExtResource("1")
+event_id = "village_blacksmith"
+title = "村庄里的铁匠"
+npc_name = "铁匠"
+background = ExtResource("3")
+portrait = ExtResource("4")
+story = "你在村庄里遇到了一名铁匠，他正忙着低头锻造手中的武器。"
+min_floor = 1
+max_floor = 2
+choices = Array[ExtResource("2")]([SubResource("Polish"), SubResource("Armor"), SubResource("Leave")])

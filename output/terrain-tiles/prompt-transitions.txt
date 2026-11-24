@@ -1,0 +1,25 @@
+Use reference image as STYLE AND MATERIAL COLOR reference. Generate ONE game transition terrain atlas matching its flat 2D cartoon hand-painted fantasy storybook style, muted warm colors, simple broad color patches, dark warm outlines on small details, minimal 2-tone shading. NO realism, NO 3D.
+EXACTLY 24 equal square sprites in FOUR COLUMNS by SIX ROWS, portrait image. Clearly separated equal transparent gutters and outer margin. Each tile AXIS ALIGNED SQUARE with full opaque terrain reaching every edge. No diamond footprints, raised blocks, sidewalls, tile frames, UI, labels, letters, numbers or watermark. Oblique overhead details but square outline. True transparent background only in gutters.
+
+These are functional TERRAIN TRANSITION tiles, each containing TWO terrain materials meeting naturally. Every row must contain four distinct orientations. Do not repeat same orientation. Keep color and texture scale exactly consistent across all tiles of a given material. Minimal decoration. Boundary not a graphic straight divider: gently irregular organic hand-painted grass tufts / shoreline / rock edge. No large props.
+
+Three pairs, each gets TWO ROWS:
+ROWS 1-2: A=muted olive GRASS, B=warm dusty ochre BARE SOIL.
+ROWS 3-4: A=muted olive GRASS, B=murky olive-gray-green SWAMP WATER. Water is a continuous flooded surface, no earth base inside water, subtle flat ripples. Land-water boundary subtle muddy bank, no cliffs.
+ROWS 5-6: A=muted charcoal purple-gray BASALT, B=orange liquid LAVA with buttery yellow swirls. Lava region contains no solid rock. Basalt ends with a simple dark crust edge, no tall cliffs.
+
+ODD ROWS (1,3,5): SINGLE EDGE ADJACENCY.
+Column1: B along TOP, A across remaining lower area.
+Column2: B along RIGHT, A across remaining left area.
+Column3: B along BOTTOM, A across remaining upper area.
+Column4: B along LEFT, A across remaining right area.
+In each odd-row tile B forms a full-width band approximately 25% of tile depth along its designated edge. A occupies remaining approximately 75%. Same band thickness and same border crossing positions across rotations.
+
+EVEN ROWS (2,4,6): TWO ADJACENT EDGE ADJACENCY, L-SHAPED CORNERS.
+Column1: B continuous along TOP and RIGHT, forms joined L-shaped outer band, A fills lower-left interior.
+Column2: B continuous along RIGHT and BOTTOM, joined L-shaped outer band, A fills upper-left interior.
+Column3: B continuous along BOTTOM and LEFT, joined L-shaped outer band, A fills upper-right interior.
+Column4: B continuous along LEFT and TOP, joined L-shaped outer band, A fills lower-right interior.
+B band approximately 25% thickness along both selected sides, smooth joined inner corner; A approximately 75%x75% inner area opposite the B corner. These are L shapes, NOT diagonal half-and-half splits and NOT isolated blobs.
+
+Connectivity priority: preserve exact matching 25% boundary entry locations where single-edge tiles join corner tiles. All edge material regions maintain same base colors. Keep incidental decorations away from edges, no dark border around tile perimeter. Terrain family colors must closely match supplied reference. Clean game-ready hand-painted surface art, natural understated boundary wiggles, clear material distinction. All 24 tiles visible, no cropped squares.

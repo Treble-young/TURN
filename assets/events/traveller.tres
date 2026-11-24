@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="StoryEventDefinition" load_steps=8 format=3]
+[ext_resource type="Script" path="res://scripts/events/event_definition.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/events/event_choice.gd" id="2"]
+[ext_resource type="Texture2D" path="res://assets/events/forest.png" id="3"]
+[ext_resource type="Texture2D" path="res://assets/events/knight.png" id="4"]
+[sub_resource type="Resource" id="Heal"]
+script = ExtResource("2")
+text = "接受药膏\n回复 8 点生命"
+heal = 8.0
+result_text = "你接受了旅人的药膏，伤口渐渐愈合。"
+[sub_resource type="Resource" id="Risk"]
+script = ExtResource("2")
+text = "下崖取钱袋\n失去 12 点生命 · 获得 18 金币"
+health_cost = 12.0
+gold_reward = 18
+result_text = "你取回了钱袋。\n获得 18 金币，失去 12 点生命。"
+[sub_resource type="Resource" id="Leave"]
+script = ExtResource("2")
+text = "告别旅人，继续前进"
+[resource]
+script = ExtResource("1")
+event_id = "forest_traveller"
+title = "林间偶遇"
+npc_name = "旅人"
+background = ExtResource("3")
+portrait = ExtResource("4")
+story = "一位旅人愿意分你一些药膏。山崖下也挂着一个钱袋。你打算怎么做？"
+min_floor = 3
+max_floor = 5
+choices = Array[ExtResource("2")]([SubResource("Heal"), SubResource("Risk"), SubResource("Leave")])

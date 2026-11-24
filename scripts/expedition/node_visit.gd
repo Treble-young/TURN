@@ -19,11 +19,17 @@ func _ready() -> void:
 	if not Expedition.node_pending or kind < Expedition.Kind.SHOP or kind > Expedition.Kind.WISH:
 		get_tree().change_scene_to_file.bind(MAP).call_deferred()
 		return
+	if kind == Expedition.Kind.ENCOUNTER:
+		get_tree().change_scene_to_file.bind("res://scenes/events/story_event.tscn").call_deferred()
+		return
 	MusicManager.set_context(&"non_combat")
 	theme = UI.make_theme()
+	add_child(preload("res://scripts/ui/expedition_header.gd").new())
+	add_child(preload("res://scenes/ui/pause_menu.tscn").instantiate())
 	var center := CenterContainer.new()
 	add_child(center)
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.offset_top = 70
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size.x = 610
 	var card := UI.box(UI.PANEL, Color(ACCENTS[kind]), 1, 8)
@@ -50,9 +56,6 @@ func _refresh() -> void:
 	for child in body.get_children():
 		body.remove_child(child)
 		child.queue_free()
-	body.add_child(UI.label("第 %d 层   ·   生命 %d / %d   ·   金币 %d" % [
-		Expedition.floor_number, roundi(Expedition.health), roundi(Expedition.max_health()), Expedition.gold,
-	], 15, UI.SOFT))
 	body.add_child(UI.label(Expedition.KIND_NAMES[kind], 38, Color(ACCENTS[kind])))
 	body.add_child(HSeparator.new())
 	if not Expedition.node_pending:

@@ -37,10 +37,11 @@ const KIND_DETAILS := [
 	"击败本层首领，必定获得一件物品。",
 	"用金币购买物品，获得攻击、生命、移动或金币收益等增益。可以购买多件，也可以直接离开。",
 	"在营火旁休息可以恢复生命值。",
-	"途中遇见旅人。你可以接受药膏恢复生命，或冒险消耗生命换取金币。",
+	"邂逅不同的人物并作出选择。事件随层数变化，部分选择可能触发战斗。",
 	"石龛会出现两件物品。任选一件免费带走。",
 ]
 const ITEMS := {
+	"fine_soft_armor": {"name": "精良软甲", "effect": "战斗中每次形态切换完成后，获得 5 点护盾。", "price": 16, "unique": true, "event_only": true},
 	"light_range": {"name": "长辉棱镜", "effect": "光刃射程 +25%（可叠加）", "price": 20},
 	"light_pierce": {"name": "贯光符印", "effect": "光刃可额外命中 1 个敌人（可叠加）", "price": 24},
 	"light_blade": {"name": "辉光刻印", "effect": "光刃强化：伤害 +50%，最多命中三个敌人（重复获取不叠加）", "price": 28},
@@ -72,6 +73,7 @@ var level := 1
 var experience := 0
 var total_experience := 0
 var relics: Dictionary = {}
+var event_attack_bonus := 0.0
 var rest_entry_healed := 0.0
 var visited: Array[Vector2i] = []
 var offers: Array[String] = []
@@ -108,6 +110,7 @@ func start_run(requested_seed: int = -1, selected_difficulty: int = Difficulty.S
 	experience = 0
 	total_experience = 0
 	relics.clear()
+	event_attack_bonus = 0.0
 	rest_entry_healed = 0.0
 	visited.clear()
 	offers.clear()
@@ -248,7 +251,7 @@ func max_health(at_level: int = 0) -> float:
 	return maximum
 
 func damage(at_level: int) -> float:
-	return BASE_DAMAGE + (at_level - 1) * DAMAGE_PER_LEVEL + 4.0 * relics.get("blade", 0)
+	return event_attack_bonus + BASE_DAMAGE + (at_level - 1) * DAMAGE_PER_LEVEL + 4.0 * relics.get("blade", 0)
 
 func speed() -> float:
 	return BASE_SPEED + 20.0 * relics.get("boots", 0)
@@ -264,7 +267,7 @@ func _roll_item(excluded: Array[String] = []) -> String:
 	var total_weight := 0
 	for id: String in ITEMS:
 		var item: Dictionary = ITEMS[id]
-		if excluded.has(id) or (item.get("unique", false) and relics.has(id)):
+		if item.get("event_only", false) or excluded.has(id) or (item.get("unique", false) and relics.has(id)):
 			continue
 		var weight: int = RARE_ITEM_WEIGHT if item.get("rare", false) else item.get("weight", COMMON_ITEM_WEIGHT)
 		weights[id] = weight
@@ -388,3 +391,30 @@ func lose_battle(progress: ExperienceProgress) -> void:
 	node_pending = false
 	active = false
 	won = false
+
+func current_story_event() -> StoryEventDefinition:
+	var catalog = load("res://assets/events/catalog.tres")
+	return catalog.pick(floor_number, run_seed, stage, lane)
+
+func can_choose_event(index: int) -> bool:
+	if not active or not node_pending or current_kind != Kind.ENCOUNTER: return false
+	var event := current_story_event()
+	if event == null or index < 0 or index >= event.choices.size(): return false
+	var choice := event.choices[index]
+	return gold >= choice.gold_cost and (choice.health_cost <= 0.0 or health > choice.health_cost) and (choice.relic_id.is_empty() or (ITEMS.has(choice.relic_id) and not (ITEMS[choice.relic_id].get("unique", false) and relics.has(choice.relic_id))))
+
+func choose_event(index: int) -> bool:
+	if not can_choose_event(index): return false
+	var choice := current_story_event().choices[index]
+	gold += choice.gold_reward - choice.gold_cost
+	health -= choice.health_cost
+	_heal(choice.heal)
+	event_attack_bonus += choice.attack_bonus
+	if not choice.relic_id.is_empty(): _award_item(choice.relic_id)
+	report = choice.result_text
+	if choice.battle_map != null:
+		get_tree().set_meta("battle_map_override", choice.battle_map.resource_path)
+		current_kind = Kind.BATTLE
+	else:
+		node_pending = false
+	return true
