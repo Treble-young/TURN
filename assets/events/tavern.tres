@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="StoryEventDefinition" load_steps=6 format=3]
+[ext_resource type="Script" path="res://scripts/events/event_definition.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/events/event_choice.gd" id="2"]
+[ext_resource type="Resource" path="res://assets/events/tavern_round_2.tres" id="3"]
+[sub_resource type="Resource" id="Play"]
+script = ExtResource("2")
+text = "试试手气\n消耗3金币，80%概率获得7金币"
+gold_cost = 3
+gold_reward = 7
+reward_chance = 0.8
+result_text = "第1局赢了！消耗3金币，获得7金币。"
+failure_text = "第1局没能获胜，消耗了3金币。"
+next_event = ExtResource("3")
+[sub_resource type="Resource" id="Leave"]
+script = ExtResource("2")
+text = "默默观看"
+result_text = "你看了一会儿热闹，起身继续旅途。"
+[resource]
+script = ExtResource("1")
+event_id = "tavern_cards_1"
+title = "酒馆牌局"
+background_id = 3
+story = "酒馆灯光昏黄，笑声与碰杯声却此起彼伏。你好不容易找到一处空位坐下，发现同桌正在玩纸牌。有人朝你扬了扬钱袋：“来一局，试试手气？”"
+min_floor = 1
+max_floor = 5
+choices = Array[ExtResource("2")]([SubResource("Play"), SubResource("Leave")])

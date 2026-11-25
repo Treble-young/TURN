@@ -1,7 +1,7 @@
 [gd_resource type="TileSet" format=3 uid="uid://u4x06cr2msvf"]
 
-[ext_resource type="Texture2D" path="res://assets/tiles/updated/base_tiles.png" id="1"]
-[ext_resource type="Texture2D" path="res://assets/tiles/updated/transitions.png" id="9"]
+[ext_resource type="Texture2D" uid="uid://bh7q8yorii3b8" path="res://assets/tiles/updated/base_tiles.png" id="1"]
+[ext_resource type="Texture2D" uid="uid://cx4twurs3ntng" path="res://assets/tiles/updated/transitions.png" id="9"]
 
 [sub_resource type="TileSetAtlasSource" id="base"]
 resource_name = "新版普通瓦片（20）"

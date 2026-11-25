@@ -185,9 +185,9 @@ func _defeat() -> void:
 	_result("勇者倒下了", "本次远征止步于第 %d 层。" % Expedition.floor_number, "查看远征结果")
 
 func _draw() -> void:
-	draw_rect(Rect2(0, 0, 1152, 648), Color("#141721"))
 	if is_instance_valid(battle_map):
 		return
+	draw_rect(Rect2(0, 0, 1152, 648), Color("#141721"))
 	draw_rect(FIELD, Color("#252839"))
 	draw_rect(FIELD, Color("#75604c"), false, 2.0)
 	for x in range(74, 1100, 48):

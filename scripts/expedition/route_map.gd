@@ -422,10 +422,12 @@ func _preview_battle(kind: int) -> void:
 		frame.add_child(placeholder)
 
 func _confirm_node() -> void:
-	if not Expedition.enter_node(selected.x, selected.y):
+	if TideTransition.busy or not Expedition.enter_node(selected.x, selected.y):
 		return
 	var scene := ARENA if Expedition.is_battle(Expedition.current_kind) else VISIT
-	get_tree().change_scene_to_file(scene)
+	if Expedition.current_kind in [Expedition.Kind.ENCOUNTER, Expedition.Kind.SHOP]:
+		scene = "res://scenes/events/story_event.tscn"
+	TideTransition.change_scene(scene)
 
 func _new_run() -> void:
 	Expedition.start_run(-1, Expedition.difficulty)

@@ -85,12 +85,12 @@ func _throw_stone(aim_point: Vector2) -> void:
 	get_parent().add_child(stone)
 	stone.global_position = origin
 
-func take_damage(amount: float) -> void:
+func take_damage(amount: float, shadow_damage: bool = false) -> void:
 	if is_dead or amount <= 0:
 		return
 	health = maxf(0.0, health - amount)
 	health_bar.update_health(health, stats.max_health)
-	_show_damage_number(amount)
+	_show_damage_number(amount, shadow_damage)
 	if health <= 0:
 		is_dead = true
 		_drop_experience()
@@ -132,9 +132,10 @@ func _build_health_bar() -> void:
 	add_child(health_bar)
 	health_bar.update_health(health, stats.max_health)
 
-func _show_damage_number(amount: float) -> void:
+func _show_damage_number(amount: float, shadow_damage: bool = false) -> void:
 	var number := DAMAGE_NUMBER.new()
 	number.amount = amount
+	number.ink = Color("#c18aff") if shadow_damage else Color("#ffe069")
 	var spread := float(damage_number_index % 3 - 1)
 	number.drift = spread * 18
 	number.position = position + health_bar.position + Vector2(spread * 10, -9 - (damage_number_index % 2) * 9)

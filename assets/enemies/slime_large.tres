@@ -1,17 +1,17 @@
-[gd_resource type="Resource" script_class="EnemyStats" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="EnemyStats" format=3 uid="uid://chycsipmeic27"]
 
-[ext_resource type="Script" path="res://scripts/enemies/enemy_stats.gd" id="1"]
+[ext_resource type="Script" uid="uid://cw5uxevdxcojk" path="res://scripts/enemies/enemy_stats.gd" id="1"]
 
 [resource]
 script = ExtResource("1")
-experience_reward = 18
 display_name = "大史莱姆"
-max_health = 54.0
-damage = 12.0
+max_health = 76.0
+experience_reward = 0
+damage = 15.0
 move_speed = 65.0
-visual_scale = 0.75
-body_radius = 25.0
 attack_range = 55.0
 attack_interval = 1.8
+visual_scale = 0.75
+body_radius = 25.0
 frames_path = "res://assets/enemies/slime_frames.tres"
 split_stats_path = "res://assets/enemies/slime_medium.tres"

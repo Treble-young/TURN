@@ -9,17 +9,23 @@ const CHOICE_SIZE := Vector2(420, 420.0 * 177.0 / 735.0)
 
 var event: StoryEventDefinition
 var stage: Control
-var choices: VBoxContainer
+var choices: Container
 var narrative: Label
 var shared_header: Control
 var exchange_overlay: Control
 var exchange_choice := -1
 
 func _ready() -> void:
-	if not Expedition.active or not Expedition.node_pending or Expedition.current_kind != Expedition.Kind.ENCOUNTER:
+	if not Expedition.active or not Expedition.node_pending or Expedition.current_kind not in [Expedition.Kind.ENCOUNTER, Expedition.Kind.SHOP]:
 		get_tree().change_scene_to_file.bind(MAP).call_deferred()
 		return
-	event = Expedition.current_story_event()
+	if Expedition.current_kind == Expedition.Kind.SHOP:
+		event = StoryEventDefinition.new()
+		event.title = "道中行商"
+		event.background_id = 10
+		event.story = "你推开一扇木门，灯火照亮了堆满货物的小屋。柜台上摆着几件可供旅人挑选的珍物，旁边的字条写着：钱货两清，愿君一路平安。"
+	else:
+		event = Expedition.current_story_event()
 	if event == null:
 		push_error("当前层数没有可用事件，请检查 assets/events/catalog.tres")
 		return
@@ -44,7 +50,14 @@ func _ready() -> void:
 		portrait_clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		stage.add_child(portrait_clip)
 		portrait.reparent(portrait_clip, false)
-	choices = VBoxContainer.new()
+	if Expedition.current_kind == Expedition.Kind.SHOP:
+		var grid := GridContainer.new()
+		grid.columns = 2
+		grid.add_theme_constant_override("h_separation", 16)
+		grid.add_theme_constant_override("v_separation", 12)
+		choices = grid
+	else:
+		choices = VBoxContainer.new()
 	choices.position = Vector2(680, 82)
 	choices.size = Vector2(CHOICE_SIZE.x, CHOICE_SIZE.y * 3 + 20)
 	choices.add_theme_constant_override("separation", 10)
@@ -55,7 +68,7 @@ func _ready() -> void:
 	# parchment edge ends about 25 design pixels above the screen bottom.
 	var dialog_position := Vector2((DESIGN_SIZE.x - dialog_size.x) * 0.5, DESIGN_SIZE.y - dialog_size.y + 12)
 	_picture(DIALOG, Rect2(dialog_position, dialog_size), true)
-	var speaker := _label(event.npc_name if not event.npc_name.is_empty() else event.title, Rect2(dialog_position + Vector2(62, 62) * 0.8, Vector2(230, 36) * 0.8), 27)
+	var speaker := _label(event.npc_name if not event.npc_name.is_empty() else event.title, Rect2(dialog_position + Vector2(62, 62) * 0.8 - Vector2(0, 8), Vector2(230, 36) * 0.8), 27)
 	speaker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	narrative = _label(event.story, Rect2(dialog_position + Vector2(56, 155) * 0.8, Vector2(1010, 167) * 0.8), 24)
 	narrative.vertical_alignment = VERTICAL_ALIGNMENT_TOP
@@ -130,10 +143,16 @@ func _refresh_choices() -> void:
 		choices.remove_child(child)
 		child.queue_free()
 	shared_header.refresh()
+	if Expedition.current_kind == Expedition.Kind.SHOP:
+		_refresh_shop()
+		return
 	if not Expedition.node_pending:
 		narrative.text = Expedition.report
 		_button("继续旅途", func(): get_tree().change_scene_to_file(MAP))
 		return
+	event = Expedition.current_story_event()
+	choices.position.y = 82 + (3 - event.choices.size()) * (CHOICE_SIZE.y + 10)
+	narrative.text = event.story if Expedition.report.is_empty() else Expedition.report + "\n" + event.story
 	for index in event.choices.size():
 		var choice := event.choices[index]
 		var allowed := Expedition.can_choose_event(index)
@@ -209,3 +228,28 @@ func _confirm_exchange(id: String) -> void:
 	)
 	dialog.canceled.connect(dialog.queue_free)
 	dialog.popup_centered(Vector2i(470, 170))
+
+func _refresh_shop() -> void:
+	choices.position = Vector2(118, 105)
+	choices.size = Vector2(916, 230)
+	narrative.text = event.story if Expedition.report.is_empty() else Expedition.report
+	for id in Expedition.offers:
+		var item: Dictionary = Expedition.ITEMS[id]
+		var price := Expedition.shop_price(id)
+		var blocked := not Expedition.can_receive_relic(id)
+		var button := _button("%s · %d金币\n%s" % [item["name"], price, item["effect"]], _shop_buy.bind(id), blocked or Expedition.gold < price)
+		button.custom_minimum_size = Vector2(450, 450.0 * 177.0 / 735.0)
+		button.add_theme_font_size_override("font_size", 15)
+		button.icon = UI.relic_icon(id)
+		button.expand_icon = true
+		button.add_theme_constant_override("icon_max_width", 36)
+		button.tooltip_text = "背包已满或已持有该唯一遗物" if blocked else ("金币不足" if Expedition.gold < price else item["effect"])
+	var leave := _button("收好行囊，继续前进", _shop_leave)
+	leave.custom_minimum_size = Vector2(450, 450.0 * 177.0 / 735.0)
+
+func _shop_buy(id: String) -> void:
+	if Expedition.buy(id): _refresh_choices()
+
+func _shop_leave() -> void:
+	Expedition.complete_shop()
+	get_tree().change_scene_to_file(MAP)

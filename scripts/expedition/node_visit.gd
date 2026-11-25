@@ -19,7 +19,7 @@ func _ready() -> void:
 	if not Expedition.node_pending or kind < Expedition.Kind.SHOP or kind > Expedition.Kind.WISH:
 		get_tree().change_scene_to_file.bind(MAP).call_deferred()
 		return
-	if kind == Expedition.Kind.ENCOUNTER:
+	if kind in [Expedition.Kind.ENCOUNTER, Expedition.Kind.SHOP]:
 		get_tree().change_scene_to_file.bind("res://scenes/events/story_event.tscn").call_deferred()
 		return
 	MusicManager.set_context(&"non_combat")

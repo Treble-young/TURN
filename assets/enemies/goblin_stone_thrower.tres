@@ -1,15 +1,14 @@
-[gd_resource type="Resource" script_class="EnemyStats" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="EnemyStats" format=3 uid="uid://cuxhsb2uv4fej"]
 
-[ext_resource type="Script" path="res://scripts/enemies/enemy_stats.gd" id="1"]
+[ext_resource type="Script" uid="uid://cw5uxevdxcojk" path="res://scripts/enemies/enemy_stats.gd" id="1"]
 
 [resource]
 script = ExtResource("1")
 display_name = "投石哥布林"
-max_health = 18.0
-experience_reward = 5
-damage = 4.0
-move_speed = 102.0
-attack_range = 248.0
+max_health = 44.0
+experience_reward = 4
+damage = 6.0
+attack_range = 360.0
 attack_interval = 0.78
 throws_stones = true
 visual_scale = 0.45

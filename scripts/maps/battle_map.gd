@@ -15,8 +15,16 @@ extends Node2D
 ## Zero means instant tracking; larger values follow more quickly.
 @export_range(0.0, 20.0, 0.5) var camera_follow_speed: float = 8.0
 
+var placeholder: Node2D
+
 func _ready() -> void:
-	$Ground.changed.connect(queue_redraw)
+	placeholder = Node2D.new()
+	placeholder.name = "EmptyMapPlaceholder"
+	placeholder.z_index = -100
+	add_child(placeholder)
+	placeholder.draw.connect(_draw_placeholder)
+	for child in get_children():
+		if child is TileMapLayer: child.changed.connect(placeholder.queue_redraw)
 	if not Engine.is_editor_hint() and get_tree().current_scene == self:
 		_test_map.call_deferred()
 
@@ -43,12 +51,19 @@ func configured_wave_count(battle_kind: int = -1) -> int:
 		result = maxi(result, marker.wave)
 	return result
 
-func _draw() -> void:
-	if not Engine.is_editor_hint() and show_placeholder_grid and $Ground.get_used_cells().is_empty():
-		draw_rect(arena_bounds, Color("252839"))
+func _has_tiles() -> bool:
+	for child in get_children():
+		if child is TileMapLayer and not child.get_used_cells().is_empty(): return true
+	return false
+
+func _draw_placeholder() -> void:
+	if not Engine.is_editor_hint() and show_placeholder_grid and not _has_tiles():
+		placeholder.draw_rect(arena_bounds, Color("252839"))
 		for x in range(int(arena_bounds.position.x), int(arena_bounds.end.x), 64):
-			draw_line(Vector2(x, arena_bounds.position.y), Vector2(x, arena_bounds.end.y), Color("34394b"))
+			placeholder.draw_line(Vector2(x, arena_bounds.position.y), Vector2(x, arena_bounds.end.y), Color("34394b"))
 		for y in range(int(arena_bounds.position.y), int(arena_bounds.end.y), 64):
-			draw_line(Vector2(arena_bounds.position.x, y), Vector2(arena_bounds.end.x, y), Color("34394b"))
+			placeholder.draw_line(Vector2(arena_bounds.position.x, y), Vector2(arena_bounds.end.x, y), Color("34394b"))
+
+func _draw() -> void:
 	if Engine.is_editor_hint():
 		draw_rect(arena_bounds, Color("e5c082"), false, 2)

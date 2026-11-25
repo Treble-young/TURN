@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="StoryEventDefinition" load_steps=5 format=3]
+[ext_resource type="Script" path="res://scripts/events/event_definition.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/events/event_choice.gd" id="2"]
+[sub_resource type="Resource" id="Play"]
+script = ExtResource("2")
+text = "再来一局\n消耗7金币，40%概率获得12金币"
+gold_cost = 7
+gold_reward = 12
+reward_chance = 0.4
+result_text = "第3局赢了！消耗7金币，获得12金币。"
+failure_text = "第3局没能获胜，消耗了7金币。"
+[sub_resource type="Resource" id="Leave"]
+script = ExtResource("2")
+text = "就此收手"
+result_text = "你收好钱袋，告别牌桌，继续旅途。"
+[resource]
+script = ExtResource("1")
+event_id = "tavern_cards_3"
+title = "酒馆牌局"
+background_id = 3
+story = "最后一轮，桌上的彩头又多了几枚。喧闹声中，庄家向你摊开手：“这一局，可要想清楚。”"
+min_floor = 1
+max_floor = 5
+choices = Array[ExtResource("2")]([SubResource("Play"), SubResource("Leave")])

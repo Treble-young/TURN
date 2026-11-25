@@ -158,6 +158,7 @@ func _begin_transformation() -> void:
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		freeze_enemy(enemy)
 	sprite.modulate = Color.WHITE
+	sprite.flip_h = facing_right
 	sprite.sprite_frames = TRANSITION_FRAMES
 	sprite.scale = Vector2.ONE * 0.43
 	sprite.offset = Vector2(-157, -300)
@@ -186,6 +187,7 @@ func _exit_tree() -> void:
 	_restore_enemies()
 
 func _play_animation(animation_name: StringName) -> void:
+	sprite.flip_h = false
 	if current_form == Form.SHADOW:
 		var side := "right" if facing_right else "left"
 		sprite.sprite_frames = SHADOW_FRAMES
@@ -263,7 +265,7 @@ func _on_attack_frame() -> void:
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		var offset: Vector2 = enemy.global_position - global_position
 		if offset.length() <= attack_range + enemy.stats.body_radius and (offset.length() < 25 or direction.dot(offset.normalized()) >= 0.0):
-			enemy.take_damage(attack_damage * ([1.0, 1.1, 1.5][clampi(combo_stage - 1, 0, 2)] if current_form == Form.SHADOW else 1.0))
+			enemy.take_damage(attack_damage * ([1.0, 1.1, 1.5][clampi(combo_stage - 1, 0, 2)] if current_form == Form.SHADOW else 1.0), current_form == Form.SHADOW)
 
 func set_shield(value: float) -> void:
 	shield = maxf(0.0, value)

@@ -20,6 +20,7 @@ config/icon="res://icon.svg"
 Settings="*res://scripts/settings.gd"
 Expedition="*res://scripts/expedition/expedition.gd"
 MusicManager="*res://scripts/music_manager.gd"
+TideTransition="*res://scripts/ui/tide_transition.gd"
 
 [display]
 

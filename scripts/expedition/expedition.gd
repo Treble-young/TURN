@@ -83,6 +83,7 @@ var experience := 0
 var total_experience := 0
 var relics: Dictionary = {}
 var relic_capacity := 6
+var event_followup: StoryEventDefinition
 var story_catalog: Resource
 var event_attack_bonus := 0.0
 var rest_entry_healed := 0.0
@@ -139,6 +140,7 @@ func start_run(requested_seed: int = -1, selected_difficulty: int = Difficulty.S
 	salvage_used_floor = 0
 	traveler_rewarded_floor = 0
 	event_battle_pending = false
+	event_followup = null
 	visited.clear()
 	offers.clear()
 	current_kind = -1
@@ -277,6 +279,7 @@ func enter_node(to_stage: int, to_lane: int) -> bool:
 	rest_entry_healed = 0.0
 	pilgrim_entry_healed = 0.0
 	event_battle_pending = false
+	event_followup = null
 	# 入场奖励在节点确认时发放，因此休息或整理背包都能享受同一份奖励。
 	if not is_battle(current_kind) and relics.has("pilgrim_chalice"):
 		pilgrim_entry_healed = _heal(PILGRIM_HEAL)
@@ -453,6 +456,7 @@ func win_battle(remaining_health: float, progress: ExperienceProgress) -> String
 	if event_battle_pending:
 		result += _reward_event_completion()
 		event_battle_pending = false
+	event_followup = null
 	var defeated_boss := current_kind == Kind.BOSS
 	node_pending = false
 	current_kind = -1
@@ -478,6 +482,7 @@ func lose_battle(progress: ExperienceProgress) -> void:
 	won = false
 
 func current_story_event() -> StoryEventDefinition:
+	if event_followup != null: return event_followup
 	if story_catalog == null: story_catalog = load("res://assets/events/catalog.tres")
 	return story_catalog.pick(floor_number, run_seed, stage, lane)
 
@@ -493,12 +498,17 @@ func choose_event(index: int) -> bool:
 	if not can_choose_event(index): return false
 	var choice := current_story_event().choices[index]
 	if choice.exchange_relic: return false
-	gold += choice.gold_reward - choice.gold_cost
+	var reward_won := choice.reward_chance >= 1.0 or rng.randf() < choice.reward_chance
+	gold -= choice.gold_cost
+	if reward_won: gold += choice.gold_reward
 	health -= choice.health_cost
 	_heal(choice.heal)
 	event_attack_bonus += choice.attack_bonus
 	if not choice.relic_id.is_empty(): _award_item(choice.relic_id)
-	report = choice.result_text
+	report = choice.result_text if reward_won else choice.failure_text
+	if choice.next_event is StoryEventDefinition:
+		event_followup = choice.next_event
+		return true
 	if choice.battle_map != null:
 		get_tree().set_meta("battle_map_override", choice.battle_map.resource_path)
 		current_kind = Kind.BATTLE
