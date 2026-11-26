@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EnemyStats" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/enemies/enemy_stats.gd" id="1"]
+[resource]
+script = ExtResource("1")
+display_name = "魔纹巨像"
+max_health = 512.0
+damage = 16.0
+move_speed = 60.0
+attack_range = 55.0
+attack_interval = 2.0
+experience_reward = 8
+visual_scale = 0.48
+body_radius = 24.0
+frame_origin = Vector2(-181,-320)
+frames_path = "res://assets/enemies/golem_frames.tres"
+hit_frame = 9

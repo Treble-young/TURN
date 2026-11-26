@@ -21,3 +21,11 @@ extends Resource
 @export var explosion_multiplier: float = 0.0
 @export var explosion_radius: float = 50.0
 @export var frame_origin := Vector2(-128, -224)
+
+@export var is_necromancer: bool = false
+@export var summon_interval: float = 3.0
+@export var is_yeti: bool = false
+@export var ranged_damage: float = 0.0
+@export var ranged_range: float = 350.0
+@export var ranged_interval: float = 1.5
+@export var hit_frame: int = 1

@@ -1,0 +1,75 @@
+[gd_resource type="SpriteFrames" format=3 uid="uid://bx4ufi2h8ssp5"]
+
+[ext_resource type="Texture2D" uid="uid://m2uj3fimybjw" path="res://assets/enemies/snowball_play.png" id="play"]
+
+[sub_resource type="AtlasTexture" id="play_0"]
+atlas = ExtResource("play")
+region = Rect2(0, 0, 443.5, 443.5)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="play_1"]
+atlas = ExtResource("play")
+region = Rect2(443.5, 0, 443.5, 443.5)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="play_2"]
+atlas = ExtResource("play")
+region = Rect2(887, 0, 443.5, 443.5)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="play_3"]
+atlas = ExtResource("play")
+region = Rect2(1330.5, 0, 443.5, 443.5)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="play_4"]
+atlas = ExtResource("play")
+region = Rect2(0, 443.5, 443.5, 443.5)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="play_5"]
+atlas = ExtResource("play")
+region = Rect2(443.5, 443.5, 443.5, 443.5)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="play_6"]
+atlas = ExtResource("play")
+region = Rect2(887, 443.5, 443.5, 443.5)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="play_7"]
+atlas = ExtResource("play")
+region = Rect2(1330.5, 443.5, 443.5, 443.5)
+filter_clip = true
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("play_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("play_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("play_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("play_3")
+}, {
+"duration": 1.0,
+"texture": SubResource("play_4")
+}, {
+"duration": 1.0,
+"texture": SubResource("play_5")
+}, {
+"duration": 1.0,
+"texture": SubResource("play_6")
+}, {
+"duration": 1.0,
+"texture": SubResource("play_7")
+}],
+"loop": 1,
+"name": &"play",
+"speed": 10.0
+}]

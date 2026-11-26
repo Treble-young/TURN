@@ -22,12 +22,17 @@ var attacks_since_heal := 0
 var heal_cooldown := 0.0
 var healing := false
 var exploded := false
+var summon_cooldown := 3.0
+var ranged_cooldown := 0.0
+var spell := &""
 var bounds_map: Node2D
 
 func _ready() -> void:
 	stats = stats.duplicate() as EnemyStats
 	stats.max_health *= Expedition.ENEMY_MULTIPLIERS[Expedition.difficulty] * Expedition.enemy_health_modifier()
 	stats.damage *= Expedition.ENEMY_MULTIPLIERS[Expedition.difficulty]
+	stats.ranged_damage *= Expedition.ENEMY_MULTIPLIERS[Expedition.difficulty]
+	summon_cooldown = stats.summon_interval
 	health = stats.max_health
 	heal_cooldown = stats.heal_interval if stats.is_shaman else 0.0
 	sprite.sprite_frames = load(stats.frames_path)
@@ -38,6 +43,7 @@ func _ready() -> void:
 	shape.radius = stats.body_radius
 	$CollisionShape2D.shape = shape
 	sprite.animation_finished.connect(_animation_finished)
+	sprite.animation_changed.connect(_fit_animation_size)
 	sprite.frame_changed.connect(_frame_changed)
 	sprite.play(&"move")
 	_build_health_bar()
@@ -54,6 +60,9 @@ func _physics_process(delta: float) -> void:
 	if not is_instance_valid(target) or target.is_dead:
 		velocity = Vector2.ZERO
 		sprite.pause()
+		return
+	if stats.is_necromancer or stats.is_yeti:
+		_process_special(delta)
 		return
 	if stats.is_shaman:
 		_process_shaman(delta)
@@ -78,12 +87,16 @@ func _physics_process(delta: float) -> void:
 	_constrain_to_map()
 
 func _frame_changed() -> void:
+	if stats.is_necromancer or stats.is_yeti:
+		_special_frame()
+		return
+	if sprite.animation == &"spawn": return
 	if stats.is_shaman:
 		_shaman_frame()
 		return
 	if is_dead and stats.explosion_multiplier > 0 and sprite.frame >= 6:
 		_explode()
-	var release_frame := 2 if stats.throws_stones else 1
+	var release_frame := 2 if stats.throws_stones else stats.hit_frame
 	if is_dead or not is_attacking or attack_hit or sprite.frame < release_frame:
 		return
 	attack_hit = true
@@ -170,7 +183,7 @@ func _animation_finished() -> void:
 				child.position = position + Vector2(side * (child.stats.body_radius + 4), 0)
 				get_parent().add_child(child)
 		queue_free()
-	elif sprite.animation in [&"attack", &"heal"]:
+	elif sprite.animation in [&"attack", &"heal", &"summon", &"ranged", &"spawn"]:
 		healing = false
 		is_attacking = false
 		sprite.play(&"move")
@@ -264,3 +277,81 @@ func _constrain_to_map() -> void:
 	if bounds.size.x < radius * 2: clamped.x = bounds.get_center().x
 	if bounds.size.y < radius * 2: clamped.y = bounds.get_center().y
 	global_position += bounds_map.to_global(clamped) - bounds_map.to_global(center)
+
+func _process_special(delta: float) -> void:
+	summon_cooldown = maxf(0, summon_cooldown - delta)
+	ranged_cooldown = maxf(0, ranged_cooldown - delta)
+	var difference := target.global_position - global_position
+	var distance := difference.length()
+	velocity = Vector2.ZERO
+	if not is_attacking:
+		if stats.is_necromancer:
+			if summon_cooldown <= 0:
+				_begin_special(&"summon")
+				summon_cooldown = stats.summon_interval
+			elif distance <= stats.attack_range and cooldown <= 0:
+				_begin_special(&"attack")
+				cooldown = stats.attack_interval
+			elif distance < 300: velocity = -difference.normalized() * stats.move_speed
+			elif distance > stats.attack_range: velocity = difference.normalized() * stats.move_speed
+		else:
+			if distance <= stats.attack_range:
+				if cooldown <= 0:
+					_begin_special(&"attack")
+					cooldown = stats.attack_interval
+			elif distance <= stats.ranged_range and ranged_cooldown <= 0:
+				_begin_special(&"ranged")
+				ranged_cooldown = stats.ranged_interval
+			if not is_attacking: velocity = difference.normalized() * stats.move_speed
+		if not is_attacking: sprite.play(&"move")
+		sprite.flip_h = difference.x > 0
+	move_and_slide()
+	_constrain_to_map()
+
+func _begin_special(action: StringName) -> void:
+	spell = action
+	is_attacking = true
+	attack_hit = false
+	sprite.play(action)
+
+func _special_frame() -> void:
+	if is_dead or not is_attacking or attack_hit or sprite.frame < 4: return
+	attack_hit = true
+	if spell == &"summon":
+		for offset in [Vector2(-40,30),Vector2(0,45),Vector2(40,30)]:
+			var child := load("res://scenes/enemies/enemy.tscn").instantiate() as EclipseEnemy
+			child.stats = load("res://assets/enemies/skeleton.tres").duplicate()
+			var floor_scale := 1.0 + 0.13 * (Expedition.floor_number - 1)
+			var hard := Expedition.current_kind in [Expedition.Kind.ELITE, Expedition.Kind.BOSS]
+			child.stats.max_health *= floor_scale * (1.21 if hard else 1.0)
+			child.stats.damage *= floor_scale * (1.15 if hard else 1.0)
+			get_parent().add_child(child)
+			child.global_position = global_position + offset
+			child._constrain_to_map()
+			child.is_attacking = true
+			child.sprite.play(&"spawn")
+		return
+	if not is_instance_valid(target) or target.is_dead: return
+	if stats.is_yeti and spell == &"attack":
+		if global_position.distance_to(target.global_position) <= stats.attack_range + 12:
+			target.take_damage(stats.damage, false, 3.0)
+	else:
+		var bolt := preload("res://scripts/projectiles/shaman_bolt.gd").new()
+		if stats.is_yeti:
+			bolt.frames = preload("res://assets/enemies/snowball_frames.tres")
+			bolt.slow_duration = 3.0
+			bolt.speed *= 1.25
+			bolt.damage = stats.ranged_damage
+		else: bolt.damage = stats.damage
+		bolt.destination = target.global_position + STONE_ORIGIN_OFFSET
+		get_parent().add_child(bolt)
+		bolt.global_position = global_position + Vector2(0,-30)
+
+func _fit_animation_size() -> void:
+	# 巨像的攻击图是4行，移动图是3行；用首帧共同站姿校准身体大小与脚底。
+	if stats.frames_path != "res://assets/enemies/golem_frames.tres": return
+	var ratio := 265.0 / 217.0 if sprite.animation == &"attack" else 1.0
+	sprite.scale = Vector2.ONE * stats.visual_scale * ratio
+	sprite.offset = stats.frame_origin
+	if sprite.animation == &"attack":
+		sprite.offset.y = -270.0 + (318.0 + stats.frame_origin.y) / ratio

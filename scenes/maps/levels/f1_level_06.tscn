@@ -28,24 +28,48 @@ position = Vector2(576, 385)
 
 [node name="EnemySpawns" type="Node2D" parent="." unique_id=1770527787]
 
-[node name="Spawn1" type="Marker2D" parent="EnemySpawns" unique_id=423118293]
-position = Vector2(360, 385)
-script = ExtResource("3")
-enemy_kind = "beetle"
-count = 2
-
-[node name="Spawn3" type="Marker2D" parent="EnemySpawns" unique_id=986416470]
-position = Vector2(985, 393)
-script = ExtResource("3")
-enemy_kind = "shaman"
-
 [node name="Spawn4" type="Marker2D" parent="EnemySpawns" unique_id=1564295166]
 position = Vector2(147, 384)
 script = ExtResource("3")
-enemy_kind = "shaman"
+enemy_kind = "necromancer"
 
-[node name="Spawn2" type="Marker2D" parent="EnemySpawns" unique_id=968664478]
-position = Vector2(767, 387)
+[node name="Spawn5" type="Marker2D" parent="EnemySpawns" unique_id=904923442]
+position = Vector2(1003, 387)
 script = ExtResource("3")
-enemy_kind = "beetle"
-count = 2
+enemy_kind = "necromancer"
+
+[node name="Spawn6" type="Marker2D" parent="EnemySpawns" unique_id=266720763]
+position = Vector2(733, 386)
+script = ExtResource("3")
+enemy_kind = "skeleton"
+encounter_variant = 2
+
+[node name="Spawn7" type="Marker2D" parent="EnemySpawns" unique_id=690973999]
+position = Vector2(426, 386)
+script = ExtResource("3")
+enemy_kind = "skeleton"
+encounter_variant = 2
+
+[node name="Spawn8" type="Marker2D" parent="EnemySpawns" unique_id=582806932]
+position = Vector2(516, 481)
+script = ExtResource("3")
+enemy_kind = "skeleton"
+encounter_variant = 2
+
+[node name="Spawn9" type="Marker2D" parent="EnemySpawns" unique_id=277502526]
+position = Vector2(637, 482)
+script = ExtResource("3")
+enemy_kind = "skeleton"
+encounter_variant = 2
+
+[node name="Spawn10" type="Marker2D" parent="EnemySpawns" unique_id=1857271819]
+position = Vector2(640, 297)
+script = ExtResource("3")
+enemy_kind = "skeleton"
+encounter_variant = 2
+
+[node name="Spawn11" type="Marker2D" parent="EnemySpawns" unique_id=222464216]
+position = Vector2(520, 295)
+script = ExtResource("3")
+enemy_kind = "skeleton"
+encounter_variant = 2

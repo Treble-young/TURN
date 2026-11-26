@@ -24,45 +24,22 @@ tile_set = ExtResource("2")
 y_sort_enabled = true
 
 [node name="PlayerStart" type="Marker2D" parent="." unique_id=1338060414]
-position = Vector2(576, 385)
+position = Vector2(963, 509)
 
 [node name="EnemySpawns" type="Node2D" parent="." unique_id=1059243982]
 
-[node name="Spawn1" type="Marker2D" parent="EnemySpawns" unique_id=1217982329]
-position = Vector2(355, 239)
+[node name="Spawn1" type="Marker2D" parent="EnemySpawns" unique_id=1437747544]
+position = Vector2(978, 346)
 script = ExtResource("3")
+enemy_kind = "yeti"
 
-[node name="Spawn2" type="Marker2D" parent="EnemySpawns" unique_id=317980806]
-position = Vector2(357, 495)
+[node name="Spawn2" type="Marker2D" parent="EnemySpawns" unique_id=720867208]
+position = Vector2(832, 412)
 script = ExtResource("3")
-count = 2
-
-[node name="Spawn3" type="Marker2D" parent="EnemySpawns" unique_id=1001847097]
-position = Vector2(780, 509)
-script = ExtResource("3")
-
-[node name="Spawn4" type="Marker2D" parent="EnemySpawns" unique_id=213603335]
-position = Vector2(775, 248)
-script = ExtResource("3")
-count = 2
-
-[node name="Spawn5" type="Marker2D" parent="EnemySpawns" unique_id=517855893]
-position = Vector2(894, 375)
-script = ExtResource("3")
-enemy_kind = "goblin_stone_thrower"
-
-[node name="Spawn7" type="Marker2D" parent="EnemySpawns" unique_id=1437747544]
-position = Vector2(577, 557)
-script = ExtResource("3")
-enemy_kind = "goblin_stone_thrower"
-
-[node name="Spawn8" type="Marker2D" parent="EnemySpawns" unique_id=137404355]
-position = Vector2(572, 179)
-script = ExtResource("3")
-enemy_kind = "goblin_stone_thrower"
+enemy_kind = "yeti"
 encounter_variant = 2
 
-[node name="Spawn6" type="Marker2D" parent="EnemySpawns" unique_id=2146962755]
-position = Vector2(234, 369)
+[node name="Spawn3" type="Marker2D" parent="EnemySpawns" unique_id=443215995]
+position = Vector2(758, 531)
 script = ExtResource("3")
-enemy_kind = "goblin_stone_thrower"
+enemy_kind = "yeti"

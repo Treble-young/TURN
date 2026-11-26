@@ -4,6 +4,9 @@ const FRAMES := preload("res://assets/enemies/shaman_bolt_frames.tres")
 const SPEED := 325.0
 const PLAYER_AND_TERRAIN_MASK := 1 | 4
 
+@export var frames: SpriteFrames = FRAMES
+var speed := SPEED
+var slow_duration := 0.0
 var destination: Vector2
 var damage := 0.0
 var sprite: AnimatedSprite2D
@@ -11,7 +14,7 @@ var sprite: AnimatedSprite2D
 
 func _ready() -> void:
 	sprite = AnimatedSprite2D.new()
-	sprite.sprite_frames = FRAMES
+	sprite.sprite_frames = frames
 	sprite.play(&"play")
 	sprite.position.y = -12.0
 	sprite.scale = Vector2.ONE * 0.15
@@ -28,13 +31,13 @@ func _physics_process(delta: float) -> void:
 		return
 
 	# A swept test covers the whole segment even if the frame takes longer.
-	var end := global_position.move_toward(destination, SPEED * delta)
+	var end := global_position.move_toward(destination, speed * delta)
 	var query := PhysicsRayQueryParameters2D.create(global_position, end, PLAYER_AND_TERRAIN_MASK)
 	query.hit_from_inside = true
 	var hit := get_world_2d().direct_space_state.intersect_ray(query)
 	if not hit.is_empty():
 		if hit.collider == player:
-			player.take_damage(damage, true)
+			player.take_damage(damage, true, slow_duration)
 		queue_free()
 		return
 

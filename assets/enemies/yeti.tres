@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="EnemyStats" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/enemies/enemy_stats.gd" id="1"]
+[resource]
+script = ExtResource("1")
+display_name = "雪怪"
+max_health = 128.0
+damage = 12.0
+move_speed = 95.0
+attack_range = 45.0
+attack_interval = 1.2
+experience_reward = 8
+visual_scale = 0.36
+body_radius = 24.0
+frame_origin = Vector2(-222,-380)
+frames_path = "res://assets/enemies/yeti_frames.tres"
+is_yeti = true
+ranged_damage = 8.0
+ranged_range = 400.0
+ranged_interval = 1.5

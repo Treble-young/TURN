@@ -28,36 +28,34 @@ position = Vector2(576, 385)
 
 [node name="EnemySpawns" type="Node2D" parent="." unique_id=831049492]
 
-[node name="Spawn1" type="Marker2D" parent="EnemySpawns" unique_id=863563306]
-position = Vector2(170, 386)
-script = ExtResource("3")
-enemy_kind = "goblin_stone_thrower"
-count = 2
-
-[node name="Spawn2" type="Marker2D" parent="EnemySpawns" unique_id=1755115247]
-position = Vector2(970, 398)
-script = ExtResource("3")
-enemy_kind = "goblin_stone_thrower"
-count = 2
-
 [node name="Spawn3" type="Marker2D" parent="EnemySpawns" unique_id=471570521]
 position = Vector2(576, 255)
 script = ExtResource("3")
 enemy_kind = "beetle"
 
+[node name="Spawn7" type="Marker2D" parent="EnemySpawns" unique_id=57855450]
+position = Vector2(452, 385)
+script = ExtResource("3")
+enemy_kind = "golem"
+
+[node name="Spawn8" type="Marker2D" parent="EnemySpawns" unique_id=940717777]
+position = Vector2(720, 387)
+script = ExtResource("3")
+enemy_kind = "golem"
+
 [node name="Spawn4" type="Marker2D" parent="EnemySpawns" unique_id=1086619350]
-position = Vector2(581, 501)
+position = Vector2(584, 505)
 script = ExtResource("3")
 enemy_kind = "beetle"
 
 [node name="Spawn5" type="Marker2D" parent="EnemySpawns" unique_id=1113647720]
-position = Vector2(436, 386)
+position = Vector2(343, 385)
 script = ExtResource("3")
 enemy_kind = "beetle"
 encounter_variant = 2
 
 [node name="Spawn6" type="Marker2D" parent="EnemySpawns" unique_id=1416768582]
-position = Vector2(699, 390)
+position = Vector2(853, 389)
 script = ExtResource("3")
 enemy_kind = "beetle"
 encounter_variant = 2

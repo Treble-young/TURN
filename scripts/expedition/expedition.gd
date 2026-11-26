@@ -5,7 +5,7 @@ const DIFFICULTY_NAMES := ["标准", "困难", "噩梦"]
 const ENEMY_MULTIPLIERS := [1.0, 1.2, 1.5]
 const EXPERIENCE_PERCENT := [100, 80, 50]
 var difficulty: Difficulty = Difficulty.STANDARD
-var experience_remainder: int = 0
+var experience_remainder: float = 0.0
 
 enum Kind { BATTLE, ELITE, BOSS, SHOP, REST, ENCOUNTER, WISH }
 
@@ -59,7 +59,7 @@ const ITEMS := {
 	"merchant_pass": {"icon": 12, "name": "行商契约", "effect": "持有时，商店内所有商品按原价七折出售。", "price": 30, "rare": true, "unique": true},
 	"camp_kit": {"icon": 13, "name": "营火药囊", "effect": "进入休憩之所时立刻额外恢复 12 点生命。", "price": 20, "unique": true},
 	"frailty_seal": {"icon": 14, "name": "衰弱印记", "effect": "战斗中所有敌人的最大生命值降低 15%。", "price": 27, "unique": true},
-	"soul_lantern": {"icon": 15, "name": "引魂灯", "effect": "经验球吸附范围 +50%。", "price": 19, "unique": true},
+	"soul_lantern": {"icon": 15, "name": "引魂灯", "effect": "经验吸收效率 +25%。", "price": 19, "unique": true},
 	"stone_bracer": {"icon": 16, "name": "断石臂环", "effect": "受到远程攻击时，伤害降低 15%。", "price": 22, "unique": true},
 	"homeward_ember": {"icon": 17, "name": "归途火种", "effect": "赢得强敌试炼后，恢复 8 点生命。", "price": 21, "unique": true},
 	"salvage_die": {"icon": 18, "name": "拾遗骰", "effect": "每层第一次普通战斗未掉落遗物时，按原概率重投一次。", "price": 24, "unique": true},

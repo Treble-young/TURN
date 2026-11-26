@@ -53,7 +53,8 @@ func _ready() -> void:
 	player.ranged_damage_multiplier = 0.85 if Expedition.relics.has("stone_bracer") else 1.0
 	player.try_revive = Expedition.try_use_revival
 	player.experience_efficiency_percent = Expedition.EXPERIENCE_PERCENT[Expedition.difficulty]
-	player.experience_attraction_multiplier = 1.5 if Expedition.relics.has("soul_lantern") else 1.0
+	player.experience_attraction_multiplier = 1.0
+	player.experience_bonus_percent = 25 if Expedition.relics.has("soul_lantern") else 0
 	player.experience_remainder = Expedition.experience_remainder
 	var library = load("res://assets/maps/map_library.tres")
 	var definition = library.definition_for(Expedition.floor_number, Expedition.stage, Expedition.lane)
@@ -116,7 +117,6 @@ func _process(delta: float) -> void:
 		return
 	if wave_index == waves.size() - 1:
 		collecting = true
-		player.lock_combat()
 		wave_label.text = "战斗完成 · 正在拾取经验"
 		return
 	if intermission < 0.0:
@@ -144,6 +144,7 @@ func _spawn(kind: String, spot: Vector2) -> void:
 	var hard := Expedition.current_kind != Expedition.Kind.BATTLE
 	stats.max_health *= floor_scale * (1.21 if hard else 1.0)
 	stats.damage *= floor_scale * (1.15 if hard else 1.0)
+	stats.ranged_damage *= floor_scale * (1.15 if hard else 1.0)
 	if hard:
 		stats.experience_reward = ceili(stats.experience_reward * 1.55)
 	if is_boss:

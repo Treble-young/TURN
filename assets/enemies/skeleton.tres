@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="EnemyStats" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/enemies/enemy_stats.gd" id="1"]
+[resource]
+script = ExtResource("1")
+display_name = "骷髅"
+max_health = 48.0
+damage = 4.0
+move_speed = 110.0
+attack_range = 40.0
+attack_interval = 1.0
+experience_reward = 0
+visual_scale = 0.28
+body_radius = 16.0
+frame_origin = Vector2(-222,-380)
+frames_path = "res://assets/enemies/skeleton_frames.tres"
+
+hit_frame = 3

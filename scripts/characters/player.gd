@@ -42,7 +42,8 @@ var _charge_release_requested: bool = false
 var _light_shot_damage: float = 0.0
 @export_range(0, 100) var experience_efficiency_percent: int = 100
 var experience_attraction_multiplier := 1.0
-var experience_remainder: int = 0
+var experience_remainder: float = 0.0
+var experience_bonus_percent: int = 0
 var health: float
 var shield := 0.0
 var ranged_damage_multiplier := 1.0
@@ -72,7 +73,13 @@ func _ready() -> void:
 	sprite.frame_changed.connect(_on_attack_frame)
 	_play_animation(&"idle")
 
+var slow_remaining := 0.0
+
+func apply_slow(duration: float = 3.0) -> void:
+	if not is_dead: slow_remaining += duration
+
 func _physics_process(_delta: float) -> void:
+	slow_remaining = maxf(0, slow_remaining - _delta)
 	if is_dead or combat_locked:
 		return
 	if is_transforming:
@@ -90,6 +97,7 @@ func _physics_process(_delta: float) -> void:
 	if current_form == Form.SHADOW and combo_stage < 3 and ((is_attacking and sprite.frame >= 2) or _combo_grace > 0.0):
 		_form_label.text += "  CHAIN!"
 	_form_label.modulate = Color("d69dff") if current_form == Form.SHADOW else Color("ffe0a2")
+	if slow_remaining > 0: _form_label.text += "  SLOW %.1fs" % slow_remaining
 	_hurt_timer = maxf(0.0, _hurt_timer - _delta)
 	sprite.modulate = Color(1, 0.6, 0.6) if _hurt_timer > 0 else Color.WHITE
 	if is_charging:
@@ -101,7 +109,7 @@ func _physics_process(_delta: float) -> void:
 	if current_form == Form.LIGHT and Input.is_action_just_pressed("attack"):
 		attack()
 	var direction := Input.get_vector("move_left", "move_right", "move_up", "move_down")
-	velocity = Vector2.ZERO if is_charging else direction * move_speed
+	velocity = Vector2.ZERO if is_charging else direction * move_speed * (0.75 if slow_remaining > 0 else 1.0)
 	move_and_slide()
 	if not is_attacking:
 		if not direction.is_zero_approx():
@@ -277,7 +285,7 @@ func set_shield(value: float) -> void:
 	shield = maxf(0.0, value)
 	shield_changed.emit(shield)
 
-func take_damage(amount: float, ranged: bool = false) -> void:
+func take_damage(amount: float, ranged: bool = false, slow_duration: float = 0.0) -> void:
 	if is_dead or combat_locked or is_transforming or _hurt_timer > 0 or amount <= 0:
 		return
 	# 远程减伤先结算，护盾承受减免后的伤害。
@@ -287,6 +295,7 @@ func take_damage(amount: float, ranged: bool = false) -> void:
 	if absorbed > 0.0:
 		set_shield(shield - absorbed)
 	health = maxf(0.0, health - (amount - absorbed))
+	if amount > absorbed and slow_duration > 0: apply_slow(slow_duration)
 	_hurt_timer = hurt_invulnerability
 	# 在进入死亡状态和关闭碰撞前复活，保留本场战斗状态。
 	if health <= 0.0 and try_revive.is_valid() and try_revive.call():
@@ -306,8 +315,8 @@ func take_damage(amount: float, ranged: bool = false) -> void:
 
 func gain_experience(amount: int) -> void:
 	if not is_dead:
-		var scaled := maxi(0, amount) * experience_efficiency_percent + experience_remainder
-		experience_remainder = scaled % 100
+		var scaled := maxi(0, amount) * experience_efficiency_percent * (1.0 + experience_bonus_percent / 100.0) + experience_remainder
+		experience_remainder = fmod(scaled, 100.0)
 		experience_progress.add_experience(int(scaled / 100.0))
 
 func release_light_charge() -> void:
