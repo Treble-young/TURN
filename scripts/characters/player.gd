@@ -54,6 +54,7 @@ var _attack_hit: bool = false
 @onready var experience_progress: ExperienceProgress = $ExperienceProgress
 var is_attacking: bool = false
 var facing_direction: Vector2 = Vector2.LEFT
+@export_range(1, 99) var shadow_target_limit: int = 3
 var facing_right: bool = false
 
 func _ready() -> void:
@@ -262,10 +263,15 @@ func _on_attack_frame() -> void:
 		return
 	_attack_hit = true
 	var direction := Vector2.RIGHT if facing_right else Vector2.LEFT
+	var targets: Array[Node2D] = []
 	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if enemy.is_dead: continue
 		var offset: Vector2 = enemy.global_position - global_position
 		if offset.length() <= attack_range + enemy.stats.body_radius and (offset.length() < 25 or direction.dot(offset.normalized()) >= 0.0):
-			enemy.take_damage(attack_damage * ([1.0, 1.1, 1.5][clampi(combo_stage - 1, 0, 2)] if current_form == Form.SHADOW else 1.0), current_form == Form.SHADOW)
+			targets.append(enemy)
+	targets.sort_custom(func(a: Node2D, b: Node2D): return global_position.distance_squared_to(a.global_position) < global_position.distance_squared_to(b.global_position))
+	for index in mini(shadow_target_limit, targets.size()):
+		targets[index].take_damage(attack_damage * [1.0, 1.1, 1.5][clampi(combo_stage - 1, 0, 2)], true)
 
 func set_shield(value: float) -> void:
 	shield = maxf(0.0, value)

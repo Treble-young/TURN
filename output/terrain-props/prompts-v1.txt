@@ -1,0 +1,24 @@
+STATIC PROPS
+Use case: stylized-concept. Create ONE transparent-background game PROP SPRITE ATLAS matching the provided terrain art's style. NON-PIXEL 2D cartoon hand-painted fantasy storybook art, muted olive greens, ochre wood, warm brown outlines, simple broad shapes, restrained two-tone shading, gentle paper brush texture. Smooth illustrated contours, no realism, no 3D rendering. Oblique overhead camera with object tops and fronts visible, matching terrain perspective. Soft upper-left light.
+Layout EXACTLY FIVE columns by THREE rows, 15 isolated objects, generous transparent spacing, no overlapping. Same size invisible square cells, consistent bottom-center ground anchor within each cell. Entire object contained within cell with 15% margin, no cutoffs. No grid or ground squares or ground patches. True transparency around each isolated object. No baked cast shadows, no text or labels.
+Each COLUMN one category:
+Column1 TREASURE CHESTS: row1 small closed oak chest simple gold-bronze bands and latch, row2 medium closed chest more reinforced metal bands, row3 mossy old closed chest. Clear rounded lid, readable lock. Three distinct designs, no sparkles or loot.
+Column2 GRASS CLUMPS: row1 simple dense olive grass clump with 9-12 broad tapered blades, row2 taller dense grass clump with overlapping blade fans, row3 low asymmetric grass clump. Rooted fan shapes, natural asymmetry, not bushes, no flowers.
+Column3 ROCKS: row1 small rounded gray-beige boulder, row2 medium angular gray-purple rock cluster, row3 broad moss-capped stone. Flat stylized shaded facets, no realistic grain.
+Column4 TREES: row1 rounded broadleaf tree with olive cloud-shaped crown and visible brown trunk, row2 tiered evergreen with muted dark green chunky foliage and trunk, row3 crooked slender deciduous tree with asymmetric foliage crown. Trees visibly taller than other objects, simple readable silhouettes, restrained leaves grouped into broad masses, no individual realistic leaves.
+Column5 SHRUBS: row1 squat dense round olive shrub with multiple soft foliage lobes, row2 irregular spreading low bush, row3 small shrub with sparse cream flower dots. Shrubs clearly woody low round masses, distinct from pointed grass clumps.
+All objects designed to overlay square tilemap, aesthetically match reference but no background tiles. Consistent relative scale: trees tallest, shrubs and chests medium, stones and grass shorter. Image is a production sprite asset sheet, not a landscape or UI.
+
+GRASS ANIMATION
+Use case: stylized-concept. Create ONE true-alpha transparent sprite ANIMATION SHEET for a SINGLE cartoon grass clump being brushed aside by a moving character and springing back. Match provided reference STYLE: NON-PIXEL 2D hand-painted fantasy storybook, muted olive green broad pointed blades with warm dark olive outlines, simple two-tone shading, soft upper-left illumination. Oblique overhead view showing upper faces of blades and slight fronts. No realism or 3D.
+EXACT EIGHT FRAMES in FOUR COLUMNS by TWO ROWS, reading order top-left to bottom-right. Large landscape sheet, equal invisible square frame cells, generous transparent separation. Each frame contains the SAME IDENTICAL grass plant, same 11 identifiable broad tapered grass blades, same colors and blade arrangement topology. Root/base EXACT same bottom-center location inside EVERY frame cell, identical size, camera and scale. Leave ample space on left and right for motion. No plant translation, rotation as a whole, zoom, morph to different plant, loss or gain of blades. Blade lower ends anchored, upper parts bend smoothly.
+Animation action:
+Frame1 rest pose upright relaxed asymmetrical fan.
+Frame2 blades bend slightly left as brushed.
+Frame3 maximum LEFT bend, blades curve left, roots anchored.
+Frame4 sweeping back toward center, blades slightly splayed aside.
+Frame5 maximum RIGHT bend with anchored roots, elastic follow through.
+Frame6 slight RIGHT bend returning.
+Frame7 very small LEFT rebound.
+Frame8 nearly upright recovering, visually near frame1 for smooth return.
+Motion must clearly read across frames but same exact plant persists. Each root footprint and overall grass size identical, tips deform only. No characters, feet, hands, motion arrows, speed lines, particles, labels, numbers or text. No grid, ground tile, ground patch, cast shadow, background gradients or decoration. True transparent empty canvas outside the eight grass sprites. All eight complete, no cropped tips. This is a usable consistent eight-frame foliage interaction animation, not eight different grass variants.

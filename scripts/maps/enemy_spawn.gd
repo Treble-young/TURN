@@ -2,7 +2,7 @@
 class_name MapEnemySpawn
 extends Marker2D
 
-@export_enum("goblin", "slime_large", "slime_medium", "slime_small", "boss", "goblin_stone_thrower") var enemy_kind: String = "goblin":
+@export_enum("goblin", "slime_large", "slime_medium", "slime_small", "boss", "goblin_stone_thrower", "shaman", "beetle") var enemy_kind: String = "goblin":
 	set(value):
 		enemy_kind = value
 		queue_redraw()

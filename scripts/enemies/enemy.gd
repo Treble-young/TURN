@@ -18,15 +18,22 @@ var attack_hit: bool = false
 var target: Node2D
 var health_bar: Node2D
 var damage_number_index := 0
+var attacks_since_heal := 0
+var heal_cooldown := 0.0
+var healing := false
+var exploded := false
+var bounds_map: Node2D
 
 func _ready() -> void:
 	stats = stats.duplicate() as EnemyStats
 	stats.max_health *= Expedition.ENEMY_MULTIPLIERS[Expedition.difficulty] * Expedition.enemy_health_modifier()
 	stats.damage *= Expedition.ENEMY_MULTIPLIERS[Expedition.difficulty]
 	health = stats.max_health
+	heal_cooldown = stats.heal_interval if stats.is_shaman else 0.0
 	sprite.sprite_frames = load(stats.frames_path)
 	sprite.scale = Vector2.ONE * stats.visual_scale
-	sprite.offset = Vector2(-128, -225 if stats.display_name == "哥布林" else -224)
+	sprite.offset = stats.frame_origin
+	if stats.display_name == "哥布林": sprite.offset.y = -225
 	var shape := CircleShape2D.new()
 	shape.radius = stats.body_radius
 	$CollisionShape2D.shape = shape
@@ -34,6 +41,8 @@ func _ready() -> void:
 	sprite.frame_changed.connect(_frame_changed)
 	sprite.play(&"move")
 	_build_health_bar()
+	bounds_map = get_tree().get_first_node_in_group("battle_bounds")
+	_constrain_to_map()
 	target = get_tree().get_first_node_in_group("player")
 	if is_instance_valid(target) and target.is_transforming:
 		target.freeze_enemy(self)
@@ -45,6 +54,9 @@ func _physics_process(delta: float) -> void:
 	if not is_instance_valid(target) or target.is_dead:
 		velocity = Vector2.ZERO
 		sprite.pause()
+		return
+	if stats.is_shaman:
+		_process_shaman(delta)
 		return
 	var difference := target.global_position - global_position
 	if is_attacking:
@@ -63,8 +75,14 @@ func _physics_process(delta: float) -> void:
 		sprite.flip_h = difference.x > 0.0
 		sprite.play(&"move")
 	move_and_slide()
+	_constrain_to_map()
 
 func _frame_changed() -> void:
+	if stats.is_shaman:
+		_shaman_frame()
+		return
+	if is_dead and stats.explosion_multiplier > 0 and sprite.frame >= 6:
+		_explode()
 	var release_frame := 2 if stats.throws_stones else 1
 	if is_dead or not is_attacking or attack_hit or sprite.frame < release_frame:
 		return
@@ -152,7 +170,8 @@ func _animation_finished() -> void:
 				child.position = position + Vector2(side * (child.stats.body_radius + 4), 0)
 				get_parent().add_child(child)
 		queue_free()
-	elif sprite.animation == &"attack":
+	elif sprite.animation in [&"attack", &"heal"]:
+		healing = false
 		is_attacking = false
 		sprite.play(&"move")
 
@@ -163,3 +182,85 @@ func _drop_experience() -> void:
 	orb.experience_value = stats.experience_reward
 	orb.position = position + Vector2(0, -8)
 	get_parent().add_child.call_deferred(orb)
+
+func _process_shaman(delta: float) -> void:
+	heal_cooldown = maxf(0, heal_cooldown - delta)
+	var difference := target.global_position - global_position
+	var distance := difference.length()
+	velocity = Vector2.ZERO
+	if distance < stats.retreat_distance:
+		velocity = -difference.normalized() * stats.move_speed
+	elif distance > stats.attack_range:
+		velocity = difference.normalized() * stats.move_speed
+	if not is_attacking:
+		if attacks_since_heal >= 2 and heal_cooldown <= 0 and is_instance_valid(_heal_target()):
+			healing = true
+			is_attacking = true
+			attack_hit = false
+			sprite.play(&"heal")
+		elif distance <= stats.attack_range and cooldown <= 0 and (attacks_since_heal < 2 or not is_instance_valid(_heal_target())):
+			healing = false
+			is_attacking = true
+			attack_hit = false
+			cooldown = stats.attack_interval
+			sprite.flip_h = difference.x > 0
+			sprite.play(&"attack")
+		else:
+			sprite.flip_h = difference.x > 0
+			sprite.play(&"move")
+	if is_attacking: velocity = Vector2.ZERO
+	move_and_slide()
+	_constrain_to_map()
+
+func _heal_target() -> EclipseEnemy:
+	var result: EclipseEnemy
+	for ally in get_tree().get_nodes_in_group("enemies"):
+		if ally == self or not ally is EclipseEnemy or ally.is_dead or ally.health >= ally.stats.max_health: continue
+		if result == null or ally.health < result.health: result = ally
+	return result
+
+func _shaman_frame() -> void:
+	if is_dead or not is_attacking or attack_hit or sprite.frame < 4: return
+	attack_hit = true
+	if healing:
+		var ally := _heal_target()
+		if is_instance_valid(ally):
+			ally.health = minf(ally.stats.max_health, ally.health + stats.damage * stats.heal_multiplier)
+			ally.health_bar.update_health(ally.health, ally.stats.max_health)
+			var effect := AnimatedSprite2D.new()
+			effect.sprite_frames = preload("res://assets/enemies/heal_effect_frames.tres")
+			effect.sprite_frames = effect.sprite_frames.duplicate()
+			effect.sprite_frames.set_animation_loop(&"play", false)
+			effect.scale = Vector2.ONE * 0.28
+			effect.position = ally.position + Vector2(0, -40)
+			get_parent().add_child(effect)
+			effect.animation_finished.connect(effect.queue_free)
+			effect.play(&"play")
+		attacks_since_heal = 0
+		heal_cooldown = stats.heal_interval
+	else:
+		if not is_instance_valid(target) or target.is_dead: return
+		var bolt := preload("res://scripts/projectiles/shaman_bolt.gd").new()
+		bolt.destination = target.global_position + STONE_ORIGIN_OFFSET
+		bolt.damage = stats.damage
+		get_parent().add_child(bolt)
+		bolt.global_position = global_position + Vector2(0, -30)
+		attacks_since_heal += 1
+
+func _explode() -> void:
+	if exploded: return
+	exploded = true
+	if is_instance_valid(target) and not target.is_dead and global_position.distance_to(target.global_position) <= stats.explosion_radius:
+		target.take_damage(stats.damage * stats.explosion_multiplier)
+
+func _constrain_to_map() -> void:
+	if not is_instance_valid(bounds_map): return
+	var bounds: Rect2 = bounds_map.arena_bounds.abs()
+	var radius := stats.body_radius
+	var low := bounds.position + Vector2.ONE * radius
+	var high := bounds.end - Vector2.ONE * radius
+	var center := bounds_map.to_local(to_global($CollisionShape2D.position))
+	var clamped := Vector2(clampf(center.x, minf(low.x, high.x), maxf(low.x, high.x)), clampf(center.y, minf(low.y, high.y), maxf(low.y, high.y)))
+	if bounds.size.x < radius * 2: clamped.x = bounds.get_center().x
+	if bounds.size.y < radius * 2: clamped.y = bounds.get_center().y
+	global_position += bounds_map.to_global(clamped) - bounds_map.to_global(center)

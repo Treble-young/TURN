@@ -1,52 +1,68 @@
-[gd_scene load_steps=4 format=3]
-[ext_resource type="Script" path="res://scripts/maps/battle_map.gd" id="1"]
-[ext_resource type="TileSet" path="res://assets/maps/shared_tileset.tres" id="2"]
-[ext_resource type="Script" path="res://scripts/maps/enemy_spawn.gd" id="3"]
-[node name="BattleMap" type="Node2D"]
+[gd_scene format=3 uid="uid://g5y1yo4bgena"]
+
+[ext_resource type="Script" uid="uid://1lw4m7dlickn" path="res://scripts/maps/battle_map.gd" id="1"]
+[ext_resource type="TileSet" uid="uid://u4x06cr2msvf" path="res://assets/maps/shared_tileset.tres" id="2"]
+[ext_resource type="Script" uid="uid://dp6i5j1x0hbjn" path="res://scripts/maps/enemy_spawn.gd" id="3"]
+
+[node name="BattleMap" type="Node2D" unique_id=883928186]
 y_sort_enabled = true
 script = ExtResource("1")
-test_battle_type = 0
 
-[node name="Ground" type="TileMapLayer" parent="."]
+[node name="Ground" type="TileMapLayer" parent="." unique_id=1038384262]
 z_index = -10
 tile_set = ExtResource("2")
-[node name="Decorations" type="TileMapLayer" parent="."]
+
+[node name="Decorations" type="TileMapLayer" parent="." unique_id=277108899]
 z_index = -9
 tile_set = ExtResource("2")
-[node name="Transitions" type="TileMapLayer" parent="."]
+
+[node name="Transitions" type="TileMapLayer" parent="." unique_id=1149681132]
 z_index = -8
 tile_set = ExtResource("2")
-[node name="Props" type="Node2D" parent="."]
+
+[node name="Props" type="Node2D" parent="." unique_id=1981361131]
 y_sort_enabled = true
-[node name="PlayerStart" type="Marker2D" parent="."]
+
+[node name="PlayerStart" type="Marker2D" parent="." unique_id=1338060414]
 position = Vector2(576, 385)
-[node name="EnemySpawns" type="Node2D" parent="."]
 
-[node name="Spawn1" type="Marker2D" parent="EnemySpawns"]
-position = Vector2(230, 216)
+[node name="EnemySpawns" type="Node2D" parent="." unique_id=1059243982]
+
+[node name="Spawn1" type="Marker2D" parent="EnemySpawns" unique_id=1217982329]
+position = Vector2(355, 239)
 script = ExtResource("3")
-enemy_kind = "goblin"
-count = 1
-wave = 1
 
-[node name="StoneThrower" type="Marker2D" parent="EnemySpawns"]
-position = Vector2(274, 219)
+[node name="Spawn2" type="Marker2D" parent="EnemySpawns" unique_id=317980806]
+position = Vector2(357, 495)
+script = ExtResource("3")
+count = 2
+
+[node name="Spawn3" type="Marker2D" parent="EnemySpawns" unique_id=1001847097]
+position = Vector2(780, 509)
+script = ExtResource("3")
+
+[node name="Spawn4" type="Marker2D" parent="EnemySpawns" unique_id=213603335]
+position = Vector2(775, 248)
+script = ExtResource("3")
+count = 2
+
+[node name="Spawn5" type="Marker2D" parent="EnemySpawns" unique_id=517855893]
+position = Vector2(894, 375)
 script = ExtResource("3")
 enemy_kind = "goblin_stone_thrower"
-count = 1
-wave = 1
 
-[node name="Spawn2" type="Marker2D" parent="EnemySpawns"]
-position = Vector2(850, 480)
+[node name="Spawn7" type="Marker2D" parent="EnemySpawns" unique_id=1437747544]
+position = Vector2(577, 557)
 script = ExtResource("3")
-enemy_kind = "slime_medium"
-count = 1
-wave = 1
+enemy_kind = "goblin_stone_thrower"
 
-[node name="HardReinforcement" type="Marker2D" parent="EnemySpawns"]
-position = Vector2(600, 220)
+[node name="Spawn8" type="Marker2D" parent="EnemySpawns" unique_id=137404355]
+position = Vector2(572, 179)
 script = ExtResource("3")
-enemy_kind = "slime_large"
-count = 1
-wave = 2
+enemy_kind = "goblin_stone_thrower"
 encounter_variant = 2
+
+[node name="Spawn6" type="Marker2D" parent="EnemySpawns" unique_id=2146962755]
+position = Vector2(234, 369)
+script = ExtResource("3")
+enemy_kind = "goblin_stone_thrower"

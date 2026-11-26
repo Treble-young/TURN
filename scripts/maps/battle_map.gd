@@ -18,6 +18,7 @@ extends Node2D
 var placeholder: Node2D
 
 func _ready() -> void:
+	add_to_group("battle_bounds")
 	placeholder = Node2D.new()
 	placeholder.name = "EmptyMapPlaceholder"
 	placeholder.z_index = -100

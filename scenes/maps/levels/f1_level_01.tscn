@@ -33,36 +33,32 @@ position = Vector2(578, 357)
 position = Vector2(142, 175)
 script = ExtResource("3")
 enemy_kind = "goblin_stone_thrower"
-count = 3
 
 [node name="Spawn3" type="Marker2D" parent="EnemySpawns" unique_id=1720902209]
 position = Vector2(889, 188)
 script = ExtResource("3")
 enemy_kind = "goblin_stone_thrower"
-count = 3
+count = 2
 
 [node name="StoneThrower" type="Marker2D" parent="EnemySpawns" unique_id=1274490072]
 position = Vector2(142, 532)
 script = ExtResource("3")
 enemy_kind = "goblin_stone_thrower"
-count = 3
+count = 2
 
 [node name="Spawn2" type="Marker2D" parent="EnemySpawns" unique_id=872253156]
 position = Vector2(889, 537)
 script = ExtResource("3")
 enemy_kind = "goblin_stone_thrower"
-count = 3
 
 [node name="HardReinforcement" type="Marker2D" parent="EnemySpawns" unique_id=774291326]
 position = Vector2(921, 366)
 script = ExtResource("3")
-enemy_kind = "slime_large"
-wave = 2
+enemy_kind = "slime_medium"
 encounter_variant = 2
 
 [node name="HardReinforcement2" type="Marker2D" parent="EnemySpawns" unique_id=973825823]
 position = Vector2(136, 355)
 script = ExtResource("3")
-enemy_kind = "slime_large"
-wave = 2
+enemy_kind = "slime_medium"
 encounter_variant = 2

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EnemyStats" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/enemies/enemy_stats.gd" id="1"]
+[resource]
+script = ExtResource("1")
+display_name = "萨满"
+max_health = 48.0
+damage = 6.0
+move_speed = 90.0
+attack_range = 400.0
+attack_interval = 1.2
+experience_reward = 6
+visual_scale = 0.28
+body_radius = 16.0
+frame_origin = Vector2(-222, -385)
+frames_path = "res://assets/enemies/shaman_frames.tres"
+is_shaman = true

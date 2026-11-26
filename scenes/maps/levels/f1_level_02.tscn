@@ -25,25 +25,50 @@ tile_set = ExtResource("2")
 y_sort_enabled = true
 
 [node name="PlayerStart" type="Marker2D" parent="." unique_id=1112876697]
-position = Vector2(576, 385)
+position = Vector2(593, 363)
 
 [node name="EnemySpawns" type="Node2D" parent="." unique_id=1517583630]
 
 [node name="Spawn1" type="Marker2D" parent="EnemySpawns" unique_id=1803568009]
-position = Vector2(206, 205)
+position = Vector2(448, 353)
 script = ExtResource("3")
-enemy_kind = "slime_large"
-count = 2
+enemy_kind = "slime_medium"
+
+[node name="Spawn3" type="Marker2D" parent="EnemySpawns" unique_id=1020643017]
+position = Vector2(716, 360)
+script = ExtResource("3")
+enemy_kind = "slime_medium"
+
+[node name="Spawn4" type="Marker2D" parent="EnemySpawns" unique_id=746766580]
+position = Vector2(661, 255)
+script = ExtResource("3")
+enemy_kind = "slime_medium"
+
+[node name="Spawn5" type="Marker2D" parent="EnemySpawns" unique_id=952926374]
+position = Vector2(514, 248)
+script = ExtResource("3")
+enemy_kind = "slime_medium"
+encounter_variant = 1
+
+[node name="Spawn6" type="Marker2D" parent="EnemySpawns" unique_id=8455949]
+position = Vector2(532, 469)
+script = ExtResource("3")
+enemy_kind = "slime_medium"
+
+[node name="Spawn7" type="Marker2D" parent="EnemySpawns" unique_id=1712428500]
+position = Vector2(664, 472)
+script = ExtResource("3")
+enemy_kind = "slime_medium"
+encounter_variant = 1
 
 [node name="Spawn2" type="Marker2D" parent="EnemySpawns" unique_id=899150158]
-position = Vector2(850, 480)
+position = Vector2(663, 473)
 script = ExtResource("3")
 enemy_kind = "slime_large"
+encounter_variant = 2
 
 [node name="HardReinforcement" type="Marker2D" parent="EnemySpawns" unique_id=1630075696]
-position = Vector2(849, 206)
+position = Vector2(514, 247)
 script = ExtResource("3")
 enemy_kind = "slime_large"
-count = 2
-wave = 2
 encounter_variant = 2

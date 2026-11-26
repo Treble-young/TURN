@@ -2,6 +2,8 @@ extends RefCounted
 
 const BOSS_NAME := "深沼首领"
 const ENEMY_STATS := {
+	"shaman": preload("res://assets/enemies/shaman.tres"),
+	"beetle": preload("res://assets/enemies/beetle.tres"),
 	"slime_small": preload("res://assets/enemies/slime_small.tres"),
 	"goblin": preload("res://assets/enemies/goblin.tres"),
 	"goblin_stone_thrower": preload("res://assets/enemies/goblin_stone_thrower.tres"),
