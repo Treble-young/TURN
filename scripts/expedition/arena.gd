@@ -2,6 +2,8 @@ extends Node2D
 
 const ENCOUNTER := preload("res://scripts/expedition/battle_encounter.gd")
 const ENEMY_SCENE := preload("res://scenes/enemies/enemy.tscn")
+const SPIDER_MATRIARCH := preload("res://scripts/enemies/spider_matriarch.gd")
+const SPIDER_EGG := preload("res://scripts/enemies/spider_egg.gd")
 const MAP := "res://scenes/expedition/route_map.tscn"
 const FIELD := Rect2(40, 107, 1072, 498)
 const GOLD := Color("#e5c082")
@@ -135,9 +137,16 @@ func _spawn_next_wave() -> void:
 			_spawn(marker.enemy_kind, spot)
 	wave_label.text = "第 %d / %d 波" % [wave_index + 1, waves.size()]
 
-func _spawn(kind: String, spot: Vector2) -> void:
+func _spawn(kind: String, spot: Vector2, origin: Vector2 = Vector2.INF) -> void:
 	var is_boss := kind == "boss"
 	var enemy := ENEMY_SCENE.instantiate() as EclipseEnemy
+	if kind == "spider_matriarch":
+		enemy.set_script(SPIDER_MATRIARCH)
+		enemy.connect("offspring_requested", _spawn)
+	elif kind == "spider_egg":
+		enemy.set_script(SPIDER_EGG)
+		enemy.set("launch_origin", origin)
+		enemy.connect("offspring_requested", _spawn)
 	var stats := ENCOUNTER.stats_for(kind).duplicate() as EnemyStats
 	var floor_scale := 1.0 + 0.13 * (Expedition.floor_number - 1)
 	var hard := Expedition.current_kind != Expedition.Kind.BATTLE
@@ -155,7 +164,7 @@ func _spawn(kind: String, spot: Vector2) -> void:
 		stats.body_radius += 7.0
 		stats.experience_reward = 40 + Expedition.floor_number * 4
 		enemy.modulate = Color("#ffd6bd")
-	enemy.is_boss = is_boss
+	enemy.is_boss = is_boss or kind == "spider_matriarch"
 	enemy.stats = stats
 	enemy.position = spot
 	add_child(enemy)

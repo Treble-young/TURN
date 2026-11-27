@@ -25,6 +25,8 @@ func _ready() -> void:
 	add_child(sprite)
 
 func _physics_process(delta: float) -> void:
+	if is_queued_for_deletion():
+		return
 	if not is_instance_valid(owner_player) or owner_player.is_dead or owner_player.combat_locked:
 		queue_free()
 		return

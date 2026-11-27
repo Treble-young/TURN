@@ -229,7 +229,7 @@ func _draw_link(row: int, from_lane: int, to_lane: int, lateral: bool = false) -
 	var destination := _point(row, to_lane)
 	var from_index := Expedition.visited.find(Vector2i(from_row, from_lane))
 	var to_index := Expedition.visited.find(Vector2i(row, to_lane))
-	# 同排可经过两个节点，只有访问顺序相邻的两端才算走过这条连线。
+	# 同排可经过多个节点，只有访问顺序相邻的两端才算走过这条连线。
 	var followed := from_index >= 0 and to_index >= 0 and (to_index == from_index + 1 or (lateral and from_index == to_index + 1))
 	var next := Expedition.stage == from_row and Expedition.lane == from_lane and Expedition.can_reach(row, to_lane)
 	if lateral and Expedition.stage == row and Expedition.lane == to_lane:
@@ -264,6 +264,11 @@ func _point(row: int, lane_index: int) -> Vector2:
 	var y := MAP_HEIGHT - MAP_VERTICAL_PADDING - row * ROW_GAP
 	if row == Expedition.STAGE_COUNT - 1:
 		return Vector2(canvas.size.x * 0.5, y)
+	var slots: Array = Expedition.current_map()[row]
+	if slots.size() - slots.count(Expedition.EMPTY_NODE) == 2:
+		var left_lane := 1 if slots[0] == Expedition.EMPTY_NODE else 0
+		var x_ratio := 0.38 if lane_index == left_lane else 0.62
+		return Vector2(canvas.size.x * x_ratio, y)
 	var shift: Vector2 = ROUTE_OFFSETS[(row + lane_index + Expedition.floor_number - 1) % ROUTE_OFFSETS.size()]
 	return Vector2(canvas.size.x * (0.17 + lane_index * 0.33), y) + shift
 
@@ -383,10 +388,18 @@ func _preview_node() -> void:
 	travel_controls.show()
 	if Expedition.visited.has(selected):
 		travel_controls.add_child(UI.label("已经过此节点", 16, UI.SOFT))
-	elif not Expedition.can_reach(selected.x, selected.y):
+	elif not Expedition.can_reach(selected.x, selected.y, false):
 		travel_controls.add_child(UI.label("当前路线无法抵达此节点", 16, UI.SOFT))
+	elif selected.x == Expedition.stage:
+		var cost := Expedition.LATERAL_CROSSING_COST
+		var affordable := Expedition.can_reach(selected.x, selected.y)
+		var action := "支付 %d 金币并换线" % cost
+		if not affordable:
+			travel_controls.add_child(UI.label("金币不足，同排换线需要 %d 金币。" % cost, 16, UI.SOFT))
+		travel_controls.add_child(UI.action(action, _confirm_node, not affordable))
 	else:
-		var action := "确认换列并进入" if selected.x == Expedition.stage else "确认前往"
+		var changes_lane := Expedition.stage >= 0 and selected.x < Expedition.STAGE_COUNT - 1 and selected.y != Expedition.lane
+		var action := "免费换线并进入" if changes_lane else "确认前往"
 		travel_controls.add_child(UI.action(action, _confirm_node))
 
 func _preview_battle(kind: int) -> void:
@@ -403,6 +416,8 @@ func _preview_battle(kind: int) -> void:
 	var splits := ENCOUNTER.split_summary(waves)
 	if not splits.is_empty():
 		details.add_child(UI.label("分裂增援：%s" % splits, 15, UI.SOFT))
+	if kind == Expedition.Kind.BOSS and Expedition.floor_number == 1:
+		details.add_child(UI.label("赤腹母蛛在 75%、50%、25% 生命时吐丝并召来小蜘蛛。倒地后散出的虫卵会孵化。", 15, UI.SOFT))
 	details.add_child(UI.label("战斗地图", 16, UI.GOLD))
 	var frame := PanelContainer.new()
 	frame.custom_minimum_size.y = 82

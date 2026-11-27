@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="EnemyStats" format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_stats.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "赤腹母蛛"
+max_health = 310.0
+experience_reward = 24
+damage = 12.0
+move_speed = 46.0
+attack_range = 88.0
+attack_interval = 1.5
+visual_scale = 0.55
+body_radius = 42.0
+frames_path = "res://assets/enemies/spider_matriarch_frames.tres"
+frame_origin = Vector2(-160, -286)
+hit_frame = 1

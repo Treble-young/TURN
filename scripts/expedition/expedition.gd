@@ -14,6 +14,7 @@ const LANE_COUNT := 3
 const STAGE_COUNT := 6
 const EMPTY_NODE := -1
 const CROSSINGS_PER_FLOOR := 5
+const LATERAL_CROSSING_COST := 5
 const STARTING_GOLD := 15
 const BASE_HEALTH := 100.0
 const BASE_DAMAGE := 18.0
@@ -32,7 +33,7 @@ const NORMAL_DROP := 0.12
 const ELITE_DROP := 0.30
 const DROP_PER_XP := 0.0015
 const MAX_XP_DROP_BONUS := 0.30
-const KIND_NAMES := ["常规交锋", "强敌试炼", "宿命对决", "道中行商", "休憩之所", "命运所指", "秘藏之地"]
+const KIND_NAMES := ["常规交锋", "强敌试炼", "宿命对决", "道中行商", "休憩之所", "命运所指", "得偿所愿"]
 const KIND_DETAILS := [
 	"清除一波敌人。战胜后获得金币，并有机会获得物品。",
 	"迎战两波更强的敌人，获得更多经验和金币。",
@@ -40,7 +41,7 @@ const KIND_DETAILS := [
 	"用金币购买物品，获得攻击、生命、护盾或金币收益等增益。可以购买多件，也可以直接离开。",
 	"在营火旁休息可以恢复生命值。",
 	"邂逅不同的人物并作出选择。事件随层数变化，部分选择可能触发战斗。",
-	"石龛会出现两件物品。任选一件免费带走。",
+	"石龛会出现三件遗物。任选一件免费带走。",
 ]
 # icon 按图集从左到右、从上到下编号。
 const ITEMS := {
@@ -128,8 +129,10 @@ func start_run(requested_seed: int = -1, selected_difficulty: int = Difficulty.S
 	for _floor_index in range(FLOOR_COUNT):
 		var rows := _generate_floor()
 		maps.append(rows)
-		crossings.append(_generate_crossings(rows))
-		lateral_crossings.append(_generate_lateral_crossings(rows, lateral_rng))
+		# 两种连接共用一层的额度，跨排至少保留两条绕过缺口。
+		var lateral_count := lateral_rng.randi_range(2, 3)
+		crossings.append(_generate_crossings(rows, CROSSINGS_PER_FLOOR - lateral_count))
+		lateral_crossings.append(_generate_lateral_crossings(rows, lateral_rng, lateral_count))
 	var library = load("res://assets/maps/map_library.tres")
 	assigned_levels = library.assign_levels(maps, run_seed)
 	floor_number = 1
@@ -168,27 +171,24 @@ func _level_assignment_complete() -> bool:
 
 func _generate_floor() -> Array:
 	var first: Array[int] = [Kind.BATTLE, Kind.BATTLE, Kind.ELITE]
+	var extra_service := Kind.SHOP if rng.randi_range(0, 1) == 0 else Kind.REST
+	var extra_event_or_battle := Kind.ENCOUNTER if rng.randi_range(0, 1) == 0 else Kind.BATTLE
+	# 空位一起洗牌，避免删掉有数量要求的商店、休息点或事件。
 	var pool: Array[int] = [
-		Kind.BATTLE, Kind.BATTLE, Kind.BATTLE, Kind.BATTLE,
-		Kind.ELITE, Kind.ELITE, Kind.SHOP, Kind.SHOP, Kind.REST, Kind.REST,
-		Kind.ENCOUNTER, Kind.WISH,
+		Kind.SHOP, Kind.REST, extra_service,
+		Kind.ENCOUNTER, Kind.ENCOUNTER, extra_event_or_battle,
+		Kind.BATTLE, Kind.ELITE, EMPTY_NODE,
 	]
 	_shuffle(first)
 	_shuffle(pool)
 	var result: Array = [first]
 	for index in range(0, pool.size(), LANE_COUNT):
 		result.append(pool.slice(index, index + LANE_COUNT))
+	result.append([Kind.WISH, Kind.WISH, Kind.WISH])
 	result.append([Kind.BOSS])
-	var removable: Array[Vector2i] = []
-	for row in range(1, STAGE_COUNT - 2):
-		for slot in LANE_COUNT:
-			if result[row][slot] not in [Kind.ENCOUNTER, Kind.WISH]:
-				removable.append(Vector2i(row, slot))
-	var gap := removable[rng.randi_range(0, removable.size() - 1)]
-	result[gap.x][gap.y] = EMPTY_NODE
 	return result
 
-func _generate_crossings(rows: Array) -> Array[Vector3i]:
+func _generate_crossings(rows: Array, count: int) -> Array[Vector3i]:
 	var choices: Array[Vector3i] = []
 	var gap := Vector2i.ZERO
 	for row in range(1, STAGE_COUNT - 1):
@@ -208,13 +208,15 @@ func _generate_crossings(rows: Array) -> Array[Vector3i]:
 		Vector3i(gap.x, gap.y, detour),
 		Vector3i(gap.x + 1, detour, gap.y),
 	]
+	if result.size() == count:
+		return result
 	var third_lane := 3 - gap.y - detour
 	for crossing in choices:
 		if crossing.y == third_lane:
 			result.append(crossing)
 			break
 	for crossing in choices:
-		if result.size() == CROSSINGS_PER_FLOOR:
+		if result.size() == count:
 			break
 		if not result.has(crossing):
 			result.append(crossing)
@@ -227,16 +229,17 @@ func _shuffle(values: Array) -> void:
 		values[index] = values[other]
 		values[other] = value
 
-## 每个完整行至多选一对相邻列，用（行号，左列）表示双向连接。
-func _generate_lateral_crossings(rows: Array, route_rng: RandomNumberGenerator) -> Array[Vector2i]:
-	var eligible: Array[int] = []
+## 用（行号，左列）表示双向连接，双节点行不参加抽取。
+func _generate_lateral_crossings(rows: Array, route_rng: RandomNumberGenerator, count: int) -> Array[Vector2i]:
+	var eligible: Array[Vector2i] = []
 	for row in rows.size():
 		if rows[row].size() == LANE_COUNT and not rows[row].has(EMPTY_NODE):
-			eligible.append(row)
+			for left_lane in LANE_COUNT - 1:
+				eligible.append(Vector2i(row, left_lane))
 	var result: Array[Vector2i] = []
-	for _index in mini(route_rng.randi_range(3, 4), eligible.size()):
+	for _index in mini(count, eligible.size()):
 		var index := route_rng.randi_range(0, eligible.size() - 1)
-		result.append(Vector2i(eligible.pop_at(index), route_rng.randi_range(0, LANE_COUNT - 2)))
+		result.append(eligible.pop_at(index))
 	return result
 
 func has_lateral_route(row: int, from_lane: int, to_lane: int) -> bool:
@@ -269,16 +272,19 @@ func has_crossing(from_stage: int, from_lane: int) -> bool:
 			return true
 	return false
 
-func can_reach(to_stage: int, to_lane: int) -> bool:
+func can_reach(to_stage: int, to_lane: int, check_balance: bool = true) -> bool:
 	if not active or node_pending or not node_exists_at(to_stage, to_lane) or visited.has(Vector2i(to_stage, to_lane)):
 		return false
 	if to_stage == stage:
-		return has_lateral_route(stage, lane, to_lane)
+		return has_lateral_route(stage, lane, to_lane) and (not check_balance or gold >= LATERAL_CROSSING_COST)
 	return to_stage == stage + 1 and (stage < 0 or has_route(lane, to_stage, to_lane))
 
 func enter_node(to_stage: int, to_lane: int) -> bool:
 	if not can_reach(to_stage, to_lane):
 		return false
+	# 确认节点时先扣路费，入场获得的金币不能预付同排路费。
+	if to_stage == stage:
+		gold -= LATERAL_CROSSING_COST
 	stage = to_stage
 	lane = to_lane
 	visited.append(Vector2i(stage, lane))
@@ -296,8 +302,7 @@ func enter_node(to_stage: int, to_lane: int) -> bool:
 		gold += TRAVELER_GOLD
 	offers.clear()
 	if current_kind == Kind.SHOP or current_kind == Kind.WISH:
-		var count := 3 if current_kind == Kind.SHOP else 2
-		for _index in count:
+		for _index in 3:
 			var id := _roll_item(offers)
 			if id.is_empty():
 				break
@@ -418,7 +423,7 @@ func complete_encounter(take_risk: bool) -> void:
 
 func complete_wish(id: String) -> void:
 	if node_pending and current_kind == Kind.WISH and offers.has(id) and can_receive_relic(id):
-		report = "秘藏之地 · 获得%s，%s" % [ITEMS[id]["name"], _award_item(id)]
+		report = "得偿所愿 · 获得%s，%s" % [ITEMS[id]["name"], _award_item(id)]
 		node_pending = false
 
 func leave_wish() -> void:

@@ -77,6 +77,31 @@ var opening_ready := false
 var shadow_kills := 0
 
 var slow_remaining := 0.0
+var web_health := 0.0
+var web_sprite: Sprite2D
+
+func bind_with_web(strength: float) -> void:
+	if is_dead or combat_locked:
+		return
+	web_health = maxf(web_health, strength)
+	velocity = Vector2.ZERO
+	if not is_instance_valid(web_sprite):
+		web_sprite = Sprite2D.new()
+		web_sprite.texture = load("res://assets/enemies/spider_web.png")
+		web_sprite.position = Vector2(0, -43)
+		web_sprite.scale = Vector2.ONE * 0.55
+		web_sprite.z_index = 2
+		add_child(web_sprite)
+	web_sprite.show()
+	# Shots already in flight must not keep damaging enemies during the bind.
+	for blade in get_tree().get_nodes_in_group("player_projectiles"):
+		if blade.owner_player == self:
+			blade.queue_free()
+
+func _cut_web(amount: float) -> void:
+	web_health = maxf(0.0, web_health - amount)
+	if web_health <= 0.0 and is_instance_valid(web_sprite):
+		web_sprite.hide()
 
 func apply_slow(duration: float = 3.0) -> void:
 	if not is_dead: slow_remaining += duration
@@ -101,6 +126,7 @@ func _physics_process(_delta: float) -> void:
 		_form_label.text += "  CHAIN!"
 	_form_label.modulate = Color("d69dff") if current_form == Form.SHADOW else Color("ffe0a2")
 	if slow_remaining > 0: _form_label.text += "  SLOW %.1fs" % slow_remaining
+	if web_health > 0.0: _form_label.text += "  蛛丝 %d" % ceili(web_health)
 	_hurt_timer = maxf(0.0, _hurt_timer - _delta)
 	sprite.modulate = Color(1, 0.6, 0.6) if _hurt_timer > 0 else Color.WHITE
 	if is_charging:
@@ -112,6 +138,8 @@ func _physics_process(_delta: float) -> void:
 	if current_form == Form.LIGHT and Input.is_action_just_pressed("attack"):
 		attack()
 	var direction := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	if web_health > 0.0:
+		direction = Vector2.ZERO
 	velocity = Vector2.ZERO if is_charging else direction * move_speed * (1.0 + 0.1 * Expedition.skill("light_speed" if current_form == Form.LIGHT else "shadow_speed")) * (0.75 if slow_remaining > 0 else 1.0)
 	move_and_slide()
 	if not is_attacking:
@@ -201,7 +229,7 @@ func _finish_transformation() -> void:
 		if enemy.is_dead: continue
 		if current_form == Form.LIGHT and Expedition.skill("dawn") > 0 and not enemy.is_boss:
 			enemy.stun_remaining = maxf(enemy.stun_remaining, 1 + Expedition.skill("dawn"))
-		elif current_form == Form.SHADOW and Expedition.skill("eclipse") > 0:
+		elif web_health <= 0.0 and current_form == Form.SHADOW and Expedition.skill("eclipse") > 0:
 			deal_skill_hit(enemy, attack_damage * (0.6 + 0.2 * Expedition.skill("eclipse")), true, false)
 	form_changed.emit(current_form)
 
@@ -279,11 +307,20 @@ func _on_attack_frame() -> void:
 				_release_light_swing()
 		elif not is_charging and sprite.frame >= 6 and not _attack_hit:
 			_attack_hit = true
-			_spawn_light_blade()
+			if web_health > 0.0:
+				_cut_web(_light_shot_damage * consume_opening())
+			else:
+				_spawn_light_blade()
 		return
 	if is_dead or not is_attacking or _attack_hit or sprite.frame < (2 if current_form == Form.SHADOW else 6):
 		return
 	_attack_hit = true
+	var multiplier := (1.0 + 0.1 * Expedition.skill("shadow_damage")) * consume_opening()
+	if combo_stage == 3: multiplier *= 1.0 + 0.3 * Expedition.skill("combo")
+	var damage: float = attack_damage * [1.0, 1.1, 1.5][clampi(combo_stage - 1, 0, 2)] * multiplier
+	if web_health > 0.0:
+		_cut_web(damage)
+		return
 	var direction := Vector2.RIGHT if facing_right else Vector2.LEFT
 	var targets: Array[Node2D] = []
 	for enemy in get_tree().get_nodes_in_group("enemies"):
@@ -292,10 +329,8 @@ func _on_attack_frame() -> void:
 		if offset.length() <= attack_range + enemy.stats.body_radius and (offset.length() < 25 or direction.dot(offset.normalized()) >= 0.0):
 			targets.append(enemy)
 	targets.sort_custom(func(a: Node2D, b: Node2D): return global_position.distance_squared_to(a.global_position) < global_position.distance_squared_to(b.global_position))
-	var multiplier := (1.0 + 0.1 * Expedition.skill("shadow_damage")) * consume_opening()
-	if combo_stage == 3: multiplier *= 1.0 + 0.3 * Expedition.skill("combo")
 	for index in mini(shadow_target_limit, targets.size()):
-		deal_skill_hit(targets[index], attack_damage * [1.0, 1.1, 1.5][clampi(combo_stage - 1, 0, 2)] * multiplier, true)
+		deal_skill_hit(targets[index], damage, true)
 
 func set_shield(value: float) -> void:
 	shield = maxf(0.0, value)
@@ -318,6 +353,7 @@ func take_damage(amount: float, ranged: bool = false, slow_duration: float = 0.0
 		health = max_health * 0.5
 	health_changed.emit(health, max_health)
 	if health <= 0:
+		_cut_web(web_health)
 		is_dead = true
 		is_charging = false
 		_combo_queued = false
@@ -388,6 +424,7 @@ func unlock_light_blade() -> void:
 
 func lock_combat() -> void:
 	combat_locked = true
+	_cut_web(web_health)
 	is_charging = false
 	is_attacking = false
 	_combo_queued = false

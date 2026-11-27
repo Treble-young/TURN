@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="EnemyStats" format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_stats.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "小蜘蛛"
+max_health = 25.0
+experience_reward = 1
+damage = 4.0
+move_speed = 114.0
+attack_range = 36.0
+attack_interval = 1.05
+visual_scale = 0.21
+body_radius = 12.0
+frames_path = "res://assets/enemies/spiderling_frames.tres"
+frame_origin = Vector2(-160, -286)
+hit_frame = 1

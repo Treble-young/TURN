@@ -2,6 +2,9 @@ extends RefCounted
 
 const BOSS_NAME := "深沼首领"
 const ENEMY_STATS := {
+	"spider_matriarch": preload("res://assets/enemies/spider_matriarch.tres"),
+	"spiderling": preload("res://assets/enemies/spiderling.tres"),
+	"spider_egg": preload("res://assets/enemies/spider_egg.tres"),
 	"necromancer": preload("res://assets/enemies/necromancer.tres"),
 	"skeleton": preload("res://assets/enemies/skeleton.tres"),
 	"yeti": preload("res://assets/enemies/yeti.tres"),
@@ -45,6 +48,8 @@ static func split_summary(waves: Array) -> String:
 	var counts := {}
 	for wave: Array in waves:
 		for kind: String in wave:
+			if kind == "spider_matriarch":
+				counts["白色虫卵"] = counts.get("白色虫卵", 0) + 5
 			var stats := stats_for(kind)
 			var count := 1
 			while not stats.split_stats_path.is_empty():

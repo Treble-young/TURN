@@ -4,7 +4,7 @@
 [resource]
 script = ExtResource("1")
 level_id = "f1_boss"
-display_name = "第1层·待制作首领"
+display_name = "赤腹母蛛"
 map_scene = ExtResource("2")
 min_floor = 1
 max_floor = 1

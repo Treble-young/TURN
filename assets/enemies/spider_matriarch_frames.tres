@@ -1,0 +1,61 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/enemies/spider_sprites.png" id="1"]
+
+[sub_resource type="AtlasTexture" id="frame_0"]
+atlas = ExtResource("1")
+region = Rect2(0, 0, 320, 320)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="frame_1"]
+atlas = ExtResource("1")
+region = Rect2(320, 0, 320, 320)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="frame_2"]
+atlas = ExtResource("1")
+region = Rect2(640, 0, 320, 320)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="frame_3"]
+atlas = ExtResource("1")
+region = Rect2(0, 320, 320, 320)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="frame_4"]
+atlas = ExtResource("1")
+region = Rect2(320, 320, 320, 320)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="frame_6"]
+atlas = ExtResource("1")
+region = Rect2(0, 640, 320, 320)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="frame_5"]
+atlas = ExtResource("1")
+region = Rect2(640, 320, 320, 320)
+filter_clip = true
+
+[resource]
+animations = [{
+"frames": [{"duration": 1.0, "texture": SubResource("frame_0")}, {"duration": 1.0, "texture": SubResource("frame_1")}, {"duration": 1.0, "texture": SubResource("frame_2")}, {"duration": 1.0, "texture": SubResource("frame_1")}],
+"loop": true,
+"name": &"move",
+"speed": 5.0
+}, {
+"frames": [{"duration": 1.0, "texture": SubResource("frame_3")}, {"duration": 1.0, "texture": SubResource("frame_4")}, {"duration": 1.0, "texture": SubResource("frame_1")}],
+"loop": false,
+"name": &"attack",
+"speed": 6.0
+}, {
+"frames": [{"duration": 1.0, "texture": SubResource("frame_3")}, {"duration": 1.0, "texture": SubResource("frame_6")}, {"duration": 1.0, "texture": SubResource("frame_6")}, {"duration": 1.0, "texture": SubResource("frame_6")}],
+"loop": false,
+"name": &"web",
+"speed": 6.0
+}, {
+"frames": [{"duration": 1.0, "texture": SubResource("frame_4")}, {"duration": 1.0, "texture": SubResource("frame_5")}, {"duration": 1.0, "texture": SubResource("frame_5")}],
+"loop": false,
+"name": &"die",
+"speed": 6.0
+}]

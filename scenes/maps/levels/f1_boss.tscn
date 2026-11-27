@@ -32,7 +32,7 @@ wave = 1
 [node name="Spawn2" type="Marker2D" parent="EnemySpawns"]
 position = Vector2(850, 350)
 script = ExtResource("3")
-enemy_kind = "boss"
+enemy_kind = "spider_matriarch"
 count = 1
 wave = 2
 
@@ -42,17 +42,3 @@ script = ExtResource("3")
 enemy_kind = "slime_medium"
 count = 1
 wave = 1
-
-[node name="Spawn4" type="Marker2D" parent="EnemySpawns"]
-position = Vector2(230, 480)
-script = ExtResource("3")
-enemy_kind = "goblin"
-count = 1
-wave = 2
-
-[node name="Spawn5" type="Marker2D" parent="EnemySpawns"]
-position = Vector2(600, 220)
-script = ExtResource("3")
-enemy_kind = "slime_medium"
-count = 1
-wave = 2
