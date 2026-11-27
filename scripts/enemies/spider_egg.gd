@@ -3,7 +3,7 @@ extends EclipseEnemy
 signal offspring_requested(kind: String, destination: Vector2, origin: Vector2)
 
 const SCATTER_TIME := 0.28
-const HATCH_TIME := 8.0
+const HATCH_TIME := 10.0
 var launch_origin := Vector2.INF
 var landing_point: Vector2
 var age := 0.0

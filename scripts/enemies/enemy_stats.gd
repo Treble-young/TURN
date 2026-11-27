@@ -29,3 +29,7 @@ extends Resource
 @export var ranged_range: float = 350.0
 @export var ranged_interval: float = 1.5
 @export var hit_frame: int = 1
+
+## 可选受击椭圆，与移动碰撞独立；零向量使用原有受击规则。
+@export var hurt_radii := Vector2.ZERO
+@export var hurt_offset := Vector2(0,-30)

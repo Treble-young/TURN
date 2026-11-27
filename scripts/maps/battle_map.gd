@@ -14,6 +14,8 @@ extends Node2D
 @export_range(0.25, 4.0, 0.05) var camera_zoom: float = 1.0
 ## Zero means instant tracking; larger values follow more quickly.
 @export_range(0.0, 20.0, 0.5) var camera_follow_speed: float = 8.0
+## 相机可越出战斗边界的距离；不改变角色和敌人的可行走区域。
+@export var camera_edge_margin := Vector2(120, 180)
 
 var placeholder: Node2D
 

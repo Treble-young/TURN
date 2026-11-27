@@ -74,7 +74,7 @@ func _ready() -> void:
 	follow_camera = BattleFollowCamera.new()
 	follow_camera.name = "FollowCamera"
 	add_child(follow_camera)
-	follow_camera.configure(player, active_field, battle_map.camera_zoom, battle_map.camera_follow_speed)
+	follow_camera.configure(player, active_field, battle_map.camera_zoom, battle_map.camera_follow_speed, battle_map.camera_edge_margin)
 	var wave_count := battle_map.configured_wave_count(Expedition.current_kind)
 	waves = []
 	for number in range(wave_count):
@@ -149,12 +149,10 @@ func _spawn(kind: String, spot: Vector2, origin: Vector2 = Vector2.INF) -> void:
 		enemy.connect("offspring_requested", _spawn)
 	var stats := ENCOUNTER.stats_for(kind).duplicate() as EnemyStats
 	var floor_scale := 1.0 + 0.13 * (Expedition.floor_number - 1)
-	var hard := Expedition.current_kind != Expedition.Kind.BATTLE
-	stats.max_health *= floor_scale * (1.21 if hard else 1.0)
-	stats.damage *= floor_scale * (1.15 if hard else 1.0)
-	stats.ranged_damage *= floor_scale * (1.15 if hard else 1.0)
-	if hard:
-		stats.experience_reward = ceili(stats.experience_reward * 1.55)
+	var hard := Expedition.current_kind == Expedition.Kind.ELITE
+	stats.max_health *= floor_scale * (1.25 if hard else 1.0)
+	stats.damage *= floor_scale * (1.25 if hard else 1.0)
+	stats.ranged_damage *= floor_scale * (1.25 if hard else 1.0)
 	if is_boss:
 		stats.display_name = ENCOUNTER.BOSS_NAME
 		stats.max_health *= 2.2

@@ -47,17 +47,9 @@ func _physics_process(delta: float) -> void:
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if enemy.is_dead or enemy in hit_targets:
 			continue
-		var center: Vector2 = enemy.global_position + Vector2(0, -30)
-		var radius: float = enemy.stats.body_radius + (27.0 if enhanced else 18.0) * size_multiplier
-		var offset := center - previous
-		var along := offset.dot(direction)
-		var perpendicular_squared := maxf(0.0, offset.length_squared() - along * along)
-		if perpendicular_squared > radius * radius:
-			continue
-		var half_chord := sqrt(radius * radius - perpendicular_squared)
-		var entry := maxf(0.0, along - half_chord)
-		if along + half_chord >= 0.0 and entry <= step:
-			contacts.append({"enemy": enemy, "distance": entry})
+		var blade_radius: float = (27.0 if enhanced else 18.0) * size_multiplier
+		var entry: float = enemy.blade_contact(previous,direction,step,blade_radius)
+		if entry>=0: contacts.append({"enemy":enemy,"distance":entry})
 	contacts.sort_custom(func(a: Dictionary, b: Dictionary): return a.distance < b.distance)
 	for contact in contacts:
 		var enemy = contact.enemy

@@ -335,9 +335,9 @@ func _special_frame() -> void:
 			var child := load("res://scenes/enemies/enemy.tscn").instantiate() as EclipseEnemy
 			child.stats = load("res://assets/enemies/skeleton.tres").duplicate()
 			var floor_scale := 1.0 + 0.13 * (Expedition.floor_number - 1)
-			var hard := Expedition.current_kind in [Expedition.Kind.ELITE, Expedition.Kind.BOSS]
-			child.stats.max_health *= floor_scale * (1.21 if hard else 1.0)
-			child.stats.damage *= floor_scale * (1.15 if hard else 1.0)
+			var hard := Expedition.current_kind == Expedition.Kind.ELITE
+			child.stats.max_health *= floor_scale * (1.25 if hard else 1.0)
+			child.stats.damage *= floor_scale * (1.25 if hard else 1.0)
 			get_parent().add_child(child)
 			child.global_position = global_position + offset
 			child._constrain_to_map()
@@ -372,3 +372,24 @@ func _fit_animation_size() -> void:
 func apply_movement_slow(fraction: float, duration: float) -> void:
 	movement_slow_fraction = maxf(movement_slow_fraction, fraction)
 	movement_slow_remaining = maxf(movement_slow_remaining, duration)
+
+func melee_contact(origin: Vector2, reach: float, forward: Vector2) -> bool:
+	if stats.hurt_radii == Vector2.ZERO:
+		var offset := global_position-origin
+		return offset.length()<=reach+stats.body_radius and (offset.length()<25 or forward.dot(offset.normalized())>=0)
+	var offset := to_global(stats.hurt_offset)-origin
+	var radii := stats.hurt_radii + Vector2.ONE*reach
+	return (offset/radii).length_squared()<=1 and forward.dot(offset)+stats.hurt_radii.x>=0
+
+func blade_contact(origin: Vector2, direction: Vector2, step: float, blade_radius: float) -> float:
+	var radii := stats.hurt_radii
+	if radii == Vector2.ZERO: radii = Vector2.ONE*stats.body_radius
+	radii += Vector2.ONE*blade_radius
+	var offset := (to_global(stats.hurt_offset)-origin)/radii
+	var ray := direction/radii
+	var a := ray.length_squared()
+	var b := offset.dot(ray)
+	var discriminant := b*b-a*(offset.length_squared()-1)
+	if discriminant<0: return -1
+	var entry := maxf(0,(b-sqrt(discriminant))/a)
+	return entry if (b+sqrt(discriminant))/a>=0 and entry<=step else -1

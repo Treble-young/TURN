@@ -1,58 +1,75 @@
 extends EclipseEnemy
-
 signal offspring_requested(kind: String, destination: Vector2, origin: Vector2)
-
-const WEB_THRESHOLDS := [0.75, 0.50, 0.25]
-const WEB_HEALTH := 36.0
-const EGG_COUNT := 5
-const EGG_SCATTER_RADIUS := 80.0
-var next_web := 0
-
-func take_damage(amount: float, shadow_damage: bool = false) -> void:
-	if is_dead or amount <= 0.0 or sprite.animation == &"web":
-		return
-	if next_web < WEB_THRESHOLDS.size():
-		var threshold := stats.max_health * float(WEB_THRESHOLDS[next_web])
-		var until_threshold := health - threshold
-		# Gate a heavy hit at the next threshold so it never skips a silk phase.
-		if amount >= until_threshold:
-			super.take_damage(until_threshold, shadow_damage)
-			next_web += 1
-			velocity = Vector2.ZERO
-			if is_instance_valid(target):
-				sprite.flip_h = target.global_position.x > global_position.x
+const WEB_HEALTH := 60.0
+var web_cooldown := 6.0
+var egg_cooldown := 14.0
+var egg_rng := RandomNumberGenerator.new()
+func _ready() -> void:
+	super._ready()
+	egg_rng.seed = hash("spider:%d:%d" % [Expedition.run_seed,Expedition.floor_number])
+func _physics_process(delta: float) -> void:
+	if is_dead: return
+	if stun_remaining <= 0:
+		web_cooldown = maxf(0,web_cooldown-delta)
+		egg_cooldown = maxf(0,egg_cooldown-delta)
+	if not is_attacking and stun_remaining <= 0 and is_instance_valid(target) and not target.is_dead:
+		if web_cooldown <= 0:
+			web_cooldown = 18.0
 			_begin_special(&"web")
-			return
-	super.take_damage(amount, shadow_damage)
-	if is_dead:
-		health_bar.hide()
-
+		elif egg_cooldown <= 0:
+			egg_cooldown = 24.0
+			# Use the supplied casting animation for egg launch as well.
+			_begin_special(&"web")
+			spell = &"eggs"
+		if is_attacking:
+			velocity = Vector2.ZERO
+			sprite.flip_h = target.global_position.x > global_position.x
+	super._physics_process(delta)
+func take_damage(amount: float, shadow_damage: bool = false) -> void:
+	if is_dead or amount <= 0 or sprite.animation == &"web": return
+	super.take_damage(amount,shadow_damage)
+	if is_dead: health_bar.hide()
 func _frame_changed() -> void:
-	if sprite.animation != &"web":
-		super._frame_changed()
-
+	if sprite.animation != &"web": super._frame_changed()
 func _animation_finished() -> void:
 	if sprite.animation == &"web":
-		if is_instance_valid(target) and not target.is_dead:
+		if spell == &"eggs":
+			_emit_eggs()
+		elif is_instance_valid(target) and not target.is_dead:
 			_flash_silk()
 			target.bind_with_web(WEB_HEALTH)
-			var away := global_position.direction_to(target.global_position).orthogonal()
-			if away.is_zero_approx():
-				away = Vector2.RIGHT
-			for side: int in [-1, 1]:
-				var spot := global_position + away * (58.0 * side)
-				offspring_requested.emit("spiderling", spot, spot)
 		is_attacking = false
 		sprite.play(&"move")
 		return
 	if sprite.animation == &"die":
-		# Eggs join the enemy group before the boss leaves it, so there is no false clear.
-		for index in EGG_COUNT:
-			var direction := Vector2.from_angle(TAU * index / EGG_COUNT + 0.24)
-			var distance := EGG_SCATTER_RADIUS - (index % 3) * 8.0
-			offspring_requested.emit("spider_egg", global_position + direction * distance, global_position)
+		_emit_spiders(3)
+		_emit_eggs(5)
 		hide()
 	super._animation_finished()
+func _emit_spiders(count: int) -> void:
+	for index in count:
+		var direction := Vector2.from_angle(TAU*index/count)
+		var spot := global_position + direction*100
+		offspring_requested.emit("spiderling",spot,spot)
+func _emit_eggs(count: int = 3) -> void:
+	var bounds: Rect2 = bounds_map.arena_bounds if is_instance_valid(bounds_map) else Rect2(40,107,1072,498)
+	var origin := bounds_map.global_position if is_instance_valid(bounds_map) else Vector2.ZERO
+	bounds.position += origin
+	var center_area := bounds.grow_individual(-bounds.size.x*.18,-bounds.size.y*.18,-bounds.size.x*.18,-bounds.size.y*.18)
+	var chosen: Array[Vector2] = []
+	for index in count:
+		var best := bounds.get_center()
+		var best_score := -INF
+		for attempt in 100:
+			var spot := Vector2(egg_rng.randf_range(center_area.position.x,center_area.end.x),egg_rng.randf_range(center_area.position.y,center_area.end.y))
+			var separation := spot.distance_to(global_position)
+			for previous in chosen: separation = minf(separation,spot.distance_to(previous)*3)
+			if separation > best_score:
+				best_score = separation
+				best = spot
+			if separation >= 240: break
+		chosen.append(best)
+		offspring_requested.emit("spider_egg",best,global_position)
 
 func _flash_silk() -> void:
 	var cast := Line2D.new()

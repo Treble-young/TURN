@@ -11,9 +11,9 @@ enum Kind { BATTLE, ELITE, BOSS, SHOP, REST, ENCOUNTER, WISH }
 
 const FLOOR_COUNT := 5
 const LANE_COUNT := 3
-const STAGE_COUNT := 6
+const STAGE_COUNT := 7
 const EMPTY_NODE := -1
-const CROSSINGS_PER_FLOOR := 5
+const CROSSINGS_PER_FLOOR := 7
 const LATERAL_CROSSING_COST := 5
 const STARTING_GOLD := 15
 const BASE_HEALTH := 100.0
@@ -123,16 +123,16 @@ func start_run(requested_seed: int = -1, selected_difficulty: int = Difficulty.S
 	maps.clear()
 	crossings.clear()
 	lateral_crossings.clear()
-	# 横向连线使用独立随机序列，避免相同种子的原有节点和斜向连线发生变化。
-	var lateral_rng := RandomNumberGenerator.new()
-	lateral_rng.seed = run_seed ^ 0x6d28a439
 	for _floor_index in range(FLOOR_COUNT):
-		var rows := _generate_floor()
+		var rows: Array
+		var links: Dictionary
+		while true:
+			rows = _generate_floor()
+			links = _generate_links(rows)
+			if not links.is_empty(): break
 		maps.append(rows)
-		# 两种连接共用一层的额度，跨排至少保留两条绕过缺口。
-		var lateral_count := lateral_rng.randi_range(2, 3)
-		crossings.append(_generate_crossings(rows, CROSSINGS_PER_FLOOR - lateral_count))
-		lateral_crossings.append(_generate_lateral_crossings(rows, lateral_rng, lateral_count))
+		crossings.append(links.diagonal)
+		lateral_crossings.append(links.lateral)
 	var library = load("res://assets/maps/map_library.tres")
 	assigned_levels = library.assign_levels(maps, run_seed)
 	floor_number = 1
@@ -170,57 +170,93 @@ func _level_assignment_complete() -> bool:
 	return true
 
 func _generate_floor() -> Array:
-	var first: Array[int] = [Kind.BATTLE, Kind.BATTLE, Kind.ELITE]
-	var extra_service := Kind.SHOP if rng.randi_range(0, 1) == 0 else Kind.REST
-	var extra_event_or_battle := Kind.ENCOUNTER if rng.randi_range(0, 1) == 0 else Kind.BATTLE
-	# 空位一起洗牌，避免删掉有数量要求的商店、休息点或事件。
-	var pool: Array[int] = [
-		Kind.SHOP, Kind.REST, extra_service,
-		Kind.ENCOUNTER, Kind.ENCOUNTER, extra_event_or_battle,
-		Kind.BATTLE, Kind.ELITE, EMPTY_NODE,
-	]
+	var first: Array[int] = [Kind.BATTLE,Kind.BATTLE,Kind.ELITE]
 	_shuffle(first)
-	_shuffle(pool)
-	var result: Array = [first]
-	for index in range(0, pool.size(), LANE_COUNT):
-		result.append(pool.slice(index, index + LANE_COUNT))
-	result.append([Kind.WISH, Kind.WISH, Kind.WISH])
-	result.append([Kind.BOSS])
-	return result
+	var pool: Array[int] = [Kind.SHOP,Kind.REST,Kind.SHOP if rng.randi_range(0,1)==0 else Kind.REST,
+		Kind.BATTLE,Kind.BATTLE,Kind.BATTLE,Kind.ELITE,Kind.ELITE,EMPTY_NODE,EMPTY_NODE,
+		Kind.WISH,Kind.WISH,Kind.ENCOUNTER,Kind.ENCOUNTER,Kind.ENCOUNTER if rng.randi_range(0,1)==0 else Kind.BATTLE]
+	while true:
+		_shuffle(pool)
+		var rows: Array = [first]
+		for index in range(0,15,3): rows.append(pool.slice(index,index+3))
+		rows.append([Kind.BOSS])
+		if not rows[5].has(EMPTY_NODE): continue
+		var gaps: Array[int] = []
+		var services := {}
+		var events := {}
+		var treasures := {}
+		var valid := true
+		for row in range(1,6):
+			for col in 3:
+				var kind: int = rows[row][col]
+				if kind == EMPTY_NODE:
+					for prior in gaps:
+						if absi(prior-row)<=1: valid = false
+					gaps.append(row)
+				var used: Dictionary = services if kind in [Kind.SHOP,Kind.REST] else (events if kind==Kind.ENCOUNTER else treasures)
+				if kind in [Kind.SHOP,Kind.REST,Kind.ENCOUNTER,Kind.WISH]:
+					if used.has(col): valid = false
+					used[col] = true
+		if valid: return rows
+	return []
 
-func _generate_crossings(rows: Array, count: int) -> Array[Vector3i]:
-	var choices: Array[Vector3i] = []
-	var gap := Vector2i.ZERO
-	for row in range(1, STAGE_COUNT - 1):
-		var empty_slot: int = rows[row].find(EMPTY_NODE)
-		if empty_slot >= 0:
-			gap = Vector2i(row, empty_slot)
-		for source in LANE_COUNT:
-			if rows[row - 1][source] == EMPTY_NODE:
-				continue
-			for target: int in [source - 1, source + 1]:
-				if target >= 0 and target < LANE_COUNT and rows[row][target] != EMPTY_NODE:
-					choices.append(Vector3i(row, source, target))
-	_shuffle(choices)
-	var detour := 1 if gap.y != 1 else 2 * rng.randi_range(0, 1)
-	# Keep a way out of the interrupted lane and a way back into it.
-	var result: Array[Vector3i] = [
-		Vector3i(gap.x, gap.y, detour),
-		Vector3i(gap.x + 1, detour, gap.y),
-	]
-	if result.size() == count:
-		return result
-	var third_lane := 3 - gap.y - detour
-	for crossing in choices:
-		if crossing.y == third_lane:
-			result.append(crossing)
-			break
-	for crossing in choices:
-		if result.size() == count:
-			break
-		if not result.has(crossing):
-			result.append(crossing)
-	return result
+func _generate_links(rows: Array) -> Dictionary:
+	for attempt in 400:
+		var diagonal: Array[Vector3i] = []
+		var lateral: Array[Vector2i] = []
+		var occupied := {}
+		for row in range(1,6):
+			var gap: int = rows[row].find(EMPTY_NODE)
+			if gap < 0: continue
+			var choices: Array[int] = []
+			for col in [gap-1,gap+1]:
+				if col>=0 and col<3 and rows[row][col]!=EMPTY_NODE: choices.append(col)
+			diagonal.append(Vector3i(row,gap,choices[rng.randi_range(0,choices.size()-1)]))
+			occupied[row-1] = 1
+		var possible: Array[Vector3i] = []
+		for source in range(0,5):
+			for col in 3:
+				if rows[source][col]==EMPTY_NODE: continue
+				for to in [col-1,col+1]:
+					var edge := Vector3i(source+1,col,to)
+					if to>=0 and to<3 and rows[source+1][to]!=EMPTY_NODE and not diagonal.has(edge): possible.append(edge)
+		_shuffle(possible)
+		for edge in possible:
+			if diagonal.size()==5: break
+			var source: int = edge.x-1
+			if occupied.get(source,0)>=2: continue
+			diagonal.append(edge)
+			occupied[source] = occupied.get(source,0)+1
+		var flat: Array[Vector2i] = []
+		for row in range(1,6):
+			if not rows[row].has(EMPTY_NODE):
+				for left in 2: flat.append(Vector2i(row,left))
+		_shuffle(flat)
+		for edge in flat:
+			if lateral.size()==2: break
+			if occupied.get(edge.x,0)>=2: continue
+			lateral.append(edge)
+			occupied[edge.x] = occupied.get(edge.x,0)+1
+		if diagonal.size()==5 and lateral.size()==2 and _all_nodes_connected(rows,diagonal,lateral): return {"diagonal":diagonal,"lateral":lateral}
+	return {}
+
+func _all_nodes_connected(rows: Array, diagonal: Array[Vector3i], lateral: Array[Vector2i]) -> bool:
+	var reached := {0:true,1:true,2:true}
+	for row in range(1,6):
+		var next := {}
+		for col in 3:
+			if rows[row][col]!=EMPTY_NODE and reached.has(col): next[col] = true
+		for link in diagonal:
+			if link.x == row and reached.has(link.y): next[link.z] = true
+		for pass_index in 3:
+			for link in lateral:
+				if link.x == row and (next.has(link.y) or next.has(link.y+1)):
+					next[link.y] = true
+					next[link.y+1] = true
+		for col in 3:
+			if rows[row][col]!=EMPTY_NODE and not next.has(col): return false
+		reached = next
+	return true
 
 func _shuffle(values: Array) -> void:
 	for index in range(values.size() - 1, 0, -1):
@@ -228,19 +264,6 @@ func _shuffle(values: Array) -> void:
 		var value = values[index]
 		values[index] = values[other]
 		values[other] = value
-
-## 用（行号，左列）表示双向连接，双节点行不参加抽取。
-func _generate_lateral_crossings(rows: Array, route_rng: RandomNumberGenerator, count: int) -> Array[Vector2i]:
-	var eligible: Array[Vector2i] = []
-	for row in rows.size():
-		if rows[row].size() == LANE_COUNT and not rows[row].has(EMPTY_NODE):
-			for left_lane in LANE_COUNT - 1:
-				eligible.append(Vector2i(row, left_lane))
-	var result: Array[Vector2i] = []
-	for _index in mini(count, eligible.size()):
-		var index := route_rng.randi_range(0, eligible.size() - 1)
-		result.append(eligible.pop_at(index))
-	return result
 
 func has_lateral_route(row: int, from_lane: int, to_lane: int) -> bool:
 	if not node_exists_at(row, from_lane) or not node_exists_at(row, to_lane):

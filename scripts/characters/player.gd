@@ -326,7 +326,7 @@ func _on_attack_frame() -> void:
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if enemy.is_dead: continue
 		var offset: Vector2 = enemy.global_position - global_position
-		if offset.length() <= attack_range + enemy.stats.body_radius and (offset.length() < 25 or direction.dot(offset.normalized()) >= 0.0):
+		if enemy.melee_contact(global_position, attack_range, direction):
 			targets.append(enemy)
 	targets.sort_custom(func(a: Node2D, b: Node2D): return global_position.distance_squared_to(a.global_position) < global_position.distance_squared_to(b.global_position))
 	for index in mini(shadow_target_limit, targets.size()):

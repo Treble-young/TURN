@@ -10,7 +10,7 @@ func _test_map() -> void:
 	preview_player.position = $PlayerStart.position
 	var camera := BattleFollowCamera.new()
 	add_child(camera)
-	camera.configure(preview_player, arena_bounds, camera_zoom, camera_follow_speed)
+	camera.configure(preview_player, arena_bounds, camera_zoom, camera_follow_speed, camera_edge_margin)
 	add_child(preload("res://scenes/ui/pause_menu.tscn").instantiate())
 	var names := ["草地", "花草地", "干土地", "暗影地", "沼泽地", "雪地", "岩石地", "熔岩地"]
 	var font := SystemFont.new()
