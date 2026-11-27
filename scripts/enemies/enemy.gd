@@ -25,6 +25,11 @@ var exploded := false
 var summon_cooldown := 3.0
 var ranged_cooldown := 0.0
 var spell := &""
+var is_boss := false
+var stun_remaining := 0.0
+var movement_slow_remaining := 0.0
+var movement_slow_fraction := 0.0
+var form_mark := -1
 var bounds_map: Node2D
 
 func _ready() -> void:
@@ -56,6 +61,14 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if is_dead:
 		return
+	movement_slow_remaining = maxf(0, movement_slow_remaining - delta)
+	if movement_slow_remaining <= 0: movement_slow_fraction = 0
+	if stun_remaining > 0:
+		stun_remaining = maxf(0, stun_remaining - delta)
+		velocity = Vector2.ZERO
+		sprite.pause()
+		return
+	if not sprite.is_playing(): sprite.play()
 	cooldown = maxf(0.0, cooldown - delta)
 	if not is_instance_valid(target) or target.is_dead:
 		velocity = Vector2.ZERO
@@ -80,7 +93,7 @@ func _physics_process(delta: float) -> void:
 				sprite.flip_h = difference.x > 0.0
 			sprite.play(&"attack")
 	else:
-		velocity = difference.normalized() * stats.move_speed
+		velocity = difference.normalized() * stats.move_speed * (1.0 - movement_slow_fraction)
 		sprite.flip_h = difference.x > 0.0
 		sprite.play(&"move")
 	move_and_slide()
@@ -202,9 +215,9 @@ func _process_shaman(delta: float) -> void:
 	var distance := difference.length()
 	velocity = Vector2.ZERO
 	if distance < stats.retreat_distance:
-		velocity = -difference.normalized() * stats.move_speed
+		velocity = -difference.normalized() * stats.move_speed * (1.0 - movement_slow_fraction)
 	elif distance > stats.attack_range:
-		velocity = difference.normalized() * stats.move_speed
+		velocity = difference.normalized() * stats.move_speed * (1.0 - movement_slow_fraction)
 	if not is_attacking:
 		if attacks_since_heal >= 2 and heal_cooldown <= 0 and is_instance_valid(_heal_target()):
 			healing = true
@@ -292,8 +305,8 @@ func _process_special(delta: float) -> void:
 			elif distance <= stats.attack_range and cooldown <= 0:
 				_begin_special(&"attack")
 				cooldown = stats.attack_interval
-			elif distance < 300: velocity = -difference.normalized() * stats.move_speed
-			elif distance > stats.attack_range: velocity = difference.normalized() * stats.move_speed
+			elif distance < 300: velocity = -difference.normalized() * stats.move_speed * (1.0 - movement_slow_fraction)
+			elif distance > stats.attack_range: velocity = difference.normalized() * stats.move_speed * (1.0 - movement_slow_fraction)
 		else:
 			if distance <= stats.attack_range:
 				if cooldown <= 0:
@@ -302,7 +315,7 @@ func _process_special(delta: float) -> void:
 			elif distance <= stats.ranged_range and ranged_cooldown <= 0:
 				_begin_special(&"ranged")
 				ranged_cooldown = stats.ranged_interval
-			if not is_attacking: velocity = difference.normalized() * stats.move_speed
+			if not is_attacking: velocity = difference.normalized() * stats.move_speed * (1.0 - movement_slow_fraction)
 		if not is_attacking: sprite.play(&"move")
 		sprite.flip_h = difference.x > 0
 	move_and_slide()
@@ -355,3 +368,7 @@ func _fit_animation_size() -> void:
 	sprite.offset = stats.frame_origin
 	if sprite.animation == &"attack":
 		sprite.offset.y = -270.0 + (318.0 + stats.frame_origin.y) / ratio
+
+func apply_movement_slow(fraction: float, duration: float) -> void:
+	movement_slow_fraction = maxf(movement_slow_fraction, fraction)
+	movement_slow_remaining = maxf(movement_slow_remaining, duration)

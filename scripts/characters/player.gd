@@ -60,7 +60,7 @@ var facing_right: bool = false
 
 func _ready() -> void:
 	health = max_health
-	form_remaining = maxf(0.1, form_duration)
+	form_remaining = skill_form_duration()
 	var hud := CanvasLayer.new()
 	add_child(hud)
 	_form_label = Label.new()
@@ -72,6 +72,9 @@ func _ready() -> void:
 	sprite.animation_finished.connect(_on_animation_finished)
 	sprite.frame_changed.connect(_on_attack_frame)
 	_play_animation(&"idle")
+
+var opening_ready := false
+var shadow_kills := 0
 
 var slow_remaining := 0.0
 
@@ -109,7 +112,7 @@ func _physics_process(_delta: float) -> void:
 	if current_form == Form.LIGHT and Input.is_action_just_pressed("attack"):
 		attack()
 	var direction := Input.get_vector("move_left", "move_right", "move_up", "move_down")
-	velocity = Vector2.ZERO if is_charging else direction * move_speed * (0.75 if slow_remaining > 0 else 1.0)
+	velocity = Vector2.ZERO if is_charging else direction * move_speed * (1.0 + 0.1 * Expedition.skill("light_speed" if current_form == Form.LIGHT else "shadow_speed")) * (0.75 if slow_remaining > 0 else 1.0)
 	move_and_slide()
 	if not is_attacking:
 		if not direction.is_zero_approx():
@@ -168,6 +171,7 @@ func _begin_transformation() -> void:
 		freeze_enemy(enemy)
 	sprite.modulate = Color.WHITE
 	sprite.flip_h = facing_right
+	sprite.speed_scale = 1.0
 	sprite.sprite_frames = TRANSITION_FRAMES
 	sprite.scale = Vector2.ONE * 0.43
 	sprite.offset = Vector2(-157, -300)
@@ -187,15 +191,25 @@ func _restore_enemies() -> void:
 func _finish_transformation() -> void:
 	current_form = Form.LIGHT if current_form == Form.SHADOW else Form.SHADOW
 	is_transforming = false
-	form_remaining = maxf(0.1, form_duration)
+	form_remaining = skill_form_duration()
 	_restore_enemies()
 	_play_animation(&"idle")
+	opening_ready = Expedition.skill("opening") > 0
+	var healing := Expedition.skill("heal_turn")
+	if healing > 0: restore_health(1 + healing)
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if enemy.is_dead: continue
+		if current_form == Form.LIGHT and Expedition.skill("dawn") > 0 and not enemy.is_boss:
+			enemy.stun_remaining = maxf(enemy.stun_remaining, 1 + Expedition.skill("dawn"))
+		elif current_form == Form.SHADOW and Expedition.skill("eclipse") > 0:
+			deal_skill_hit(enemy, attack_damage * (0.6 + 0.2 * Expedition.skill("eclipse")), true, false)
 	form_changed.emit(current_form)
 
 func _exit_tree() -> void:
 	_restore_enemies()
 
 func _play_animation(animation_name: StringName) -> void:
+	sprite.speed_scale = 1.0 + 0.1 * Expedition.skill("attack_speed") if current_form == Form.SHADOW and animation_name == &"attack" else 1.0
 	sprite.flip_h = false
 	if current_form == Form.SHADOW:
 		var side := "right" if facing_right else "left"
@@ -278,8 +292,10 @@ func _on_attack_frame() -> void:
 		if offset.length() <= attack_range + enemy.stats.body_radius and (offset.length() < 25 or direction.dot(offset.normalized()) >= 0.0):
 			targets.append(enemy)
 	targets.sort_custom(func(a: Node2D, b: Node2D): return global_position.distance_squared_to(a.global_position) < global_position.distance_squared_to(b.global_position))
+	var multiplier := (1.0 + 0.1 * Expedition.skill("shadow_damage")) * consume_opening()
+	if combo_stage == 3: multiplier *= 1.0 + 0.3 * Expedition.skill("combo")
 	for index in mini(shadow_target_limit, targets.size()):
-		targets[index].take_damage(attack_damage * [1.0, 1.1, 1.5][clampi(combo_stage - 1, 0, 2)], true)
+		deal_skill_hit(targets[index], attack_damage * [1.0, 1.1, 1.5][clampi(combo_stage - 1, 0, 2)] * multiplier, true)
 
 func set_shield(value: float) -> void:
 	shield = maxf(0.0, value)
@@ -329,8 +345,8 @@ func release_light_charge() -> void:
 func _release_light_swing() -> void:
 	is_charging = false
 	_light_shot_damage = attack_damage * lerpf(1.0, max_charge_multiplier, clampf(charge_time / maxf(0.01, max_charge_time), 0.0, 1.0))
-	if enhanced_light_blade:
-		_light_shot_damage *= 1.5
+	_light_shot_damage *= 1.0 + 0.1 * Expedition.skill("light_damage")
+	if charge_time >= max_charge_time - 0.001: _light_shot_damage *= 1.0 + 0.25 * Expedition.skill("full_charge")
 	sprite.play()
 	sprite.set_frame_and_progress(6, 0.0)
 
@@ -338,10 +354,12 @@ func _spawn_light_blade() -> void:
 	var blade := LightBlade.new()
 	blade.owner_player = self
 	blade.enhanced = enhanced_light_blade
-	blade.damage = _light_shot_damage
+	blade.damage = _light_shot_damage * consume_opening()
+	blade.damage_decay = maxf(0, 0.2 - 0.1 * Expedition.skill("falloff")) if Expedition.skill("pierce") > 0 else 0.0
+	blade.slow_fraction = 0.1 * Expedition.skill("slow")
 	blade.remaining_distance = maxf(1.0, light_blade_range)
 	blade.hits_left = (3 if enhanced_light_blade else 1) + maxi(0, light_blade_extra_hits)
-	blade.size_multiplier = lerpf(1.0, max_charge_size_multiplier, clampf(charge_time / maxf(0.01, max_charge_time), 0.0, 1.0))
+	blade.size_multiplier = lerpf(1.0, max_charge_size_multiplier, clampf(charge_time / maxf(0.01, max_charge_time), 0.0, 1.0)) * (1.0 + 0.15 * Expedition.skill("size"))
 	blade.direction = light_blade_aim_direction()
 	get_parent().add_child(blade)
 	blade.global_position = global_position + Vector2(0, -35)
@@ -382,3 +400,44 @@ func lock_combat() -> void:
 		_play_animation(&"idle")
 	for blade in get_tree().get_nodes_in_group("player_projectiles"):
 		blade.queue_free()
+
+func refresh_skills() -> void:
+	max_charge_time = 1.5 * (1.0 - 0.1 * Expedition.skill("charge"))
+	light_blade_range = 650.0 * (1.0 + 0.1 * Expedition.skill("size"))
+	light_blade_extra_hits = Expedition.skill("pierce")
+	enhanced_light_blade = false
+	shadow_target_limit = 3 + Expedition.skill("sweep")
+	attack_range = 105.0 * (1.0 + 0.1 * Expedition.skill("sweep"))
+	if is_attacking and current_form == Form.SHADOW:
+		sprite.speed_scale = 1.0 + 0.1 * Expedition.skill("attack_speed")
+
+func skill_form_duration() -> float:
+	if current_form == Form.LIGHT:
+		return maxf(0.1, form_duration + 2 * (Expedition.skill("light_long") - Expedition.skill("light_short")))
+	return maxf(0.1, form_duration + 2 * (Expedition.skill("shadow_long") - Expedition.skill("shadow_short")))
+
+func consume_opening() -> float:
+	if not opening_ready: return 1.0
+	opening_ready = false
+	return 1.0 + 0.5 * Expedition.skill("opening")
+
+func restore_health(amount: float) -> void:
+	health = minf(max_health, health + amount)
+	health_changed.emit(health,max_health)
+
+func deal_skill_hit(enemy: Node2D, amount: float, shadow: bool, allow_mark: bool = true) -> void:
+	if enemy.is_dead: return
+	var mark_level := Expedition.skill("mark")
+	var triggered: bool = allow_mark and mark_level > 0 and enemy.form_mark >= 0 and enemy.form_mark != int(shadow)
+	enemy.take_damage(amount, shadow)
+	if triggered:
+		enemy.form_mark = -1
+		if not enemy.is_dead: enemy.take_damage(attack_damage * (0.2 + 0.2 * mark_level), shadow)
+	elif allow_mark and mark_level > 0 and not enemy.is_dead:
+		enemy.form_mark = int(shadow)
+	if enemy.is_dead and shadow and Expedition.skill("leech") > 0:
+		shadow_kills += 1
+		var threshold := 4 - Expedition.skill("leech")
+		while shadow_kills >= threshold:
+			shadow_kills -= threshold
+			restore_health(1)

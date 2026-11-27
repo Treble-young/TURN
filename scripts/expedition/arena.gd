@@ -45,9 +45,7 @@ func _ready() -> void:
 	initial_experience = progress.total_experience
 	player.max_health = Expedition.max_health(progress.level)
 	player.attack_damage = Expedition.damage(progress.level)
-	player.enhanced_light_blade = Expedition.relics.has("light_blade")
-	player.light_blade_range *= 1.0 + 0.25 * int(Expedition.relics.get("light_range", 0))
-	player.light_blade_extra_hits = int(Expedition.relics.get("light_pierce", 0))
+	player.refresh_skills()
 	player.move_speed = Expedition.BASE_SPEED
 	player.health = Expedition.health
 	player.ranged_damage_multiplier = 0.85 if Expedition.relics.has("stone_bracer") else 1.0
@@ -94,6 +92,7 @@ func _ready() -> void:
 	player.died.connect(_defeat)
 	progress.experience_changed.connect(_update_experience)
 	progress.leveled_up.connect(_level_up)
+	add_child(preload("res://scripts/upgrades/upgrade_picker.gd").new())
 	_update_health(player.health, player.max_health)
 	_update_experience(progress.level, progress.experience, progress.experience_required())
 	if waves.is_empty():
@@ -156,14 +155,15 @@ func _spawn(kind: String, spot: Vector2) -> void:
 		stats.body_radius += 7.0
 		stats.experience_reward = 40 + Expedition.floor_number * 4
 		enemy.modulate = Color("#ffd6bd")
+	enemy.is_boss = is_boss
 	enemy.stats = stats
 	enemy.position = spot
 	add_child(enemy)
 
 func _level_up(new_level: int) -> void:
+	Expedition.pending_upgrades += 1
 	var bonus := Expedition.max_health(new_level) - player.max_health
 	player.max_health += bonus
-	player.health = minf(player.max_health, player.health + bonus)
 	player.attack_damage = Expedition.damage(new_level)
 	_update_health(player.health, player.max_health)
 
@@ -176,9 +176,14 @@ func _replenish_shield(_form: int) -> void:
 func _victory() -> void:
 	finished = true
 	Expedition.experience_remainder = player.experience_remainder
-	var result := Expedition.win_battle(player.health, progress)
+	var result := Expedition.win_battle(player.health, progress, true)
 	var message := "%s\n拾取 %d 经验 · 等级 %d" % [result, progress.total_experience - initial_experience, progress.level]
-	_result("战斗胜利", message, "查看远征结果" if Expedition.won else "返回路线图")
+	player.lock_combat()
+	player.set_shield(0)
+	MusicManager.set_context(&"non_combat")
+	var rewards := preload("res://scripts/ui/battle_rewards.gd").new()
+	rewards.experience_gained = progress.total_experience - initial_experience
+	add_child(rewards)
 
 func _defeat() -> void:
 	finished = true

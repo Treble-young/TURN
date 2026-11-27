@@ -45,9 +45,6 @@ const KIND_DETAILS := [
 # icon 按图集从左到右、从上到下编号。
 const ITEMS := {
 	"fine_soft_armor": {"icon": 0, "name": "精良软甲", "effect": "战斗中每次形态切换完成后，获得 5 点护盾。", "price": 16, "unique": true, "event_only": true},
-	"light_range": {"icon": 1, "name": "长辉棱镜", "effect": "光刃射程 +25%（可叠加）", "price": 20},
-	"light_pierce": {"icon": 2, "name": "贯光符印", "effect": "光刃可额外命中 1 个敌人（可叠加）", "price": 24},
-	"light_blade": {"icon": 3, "name": "辉光刻印", "effect": "光刃强化：伤害 +50%，最多命中三个敌人（重复获取不叠加）", "price": 28},
 	"blade": {"icon": 4, "name": "磨锋石", "effect": "攻击伤害 +4", "price": 18},
 	"heart": {"icon": 5, "name": "琥珀护符", "effect": "生命上限 +12，并回复 12 生命", "price": 22, "max_health": 12, "heal_on_acquire": 12},
 	"coin": {"icon": 6, "name": "旧王钱币", "effect": "每场胜利额外获得 3 金币", "price": 16},
@@ -67,6 +64,13 @@ const ITEMS := {
 	"phoenix_feather": {"icon": 20, "name": "不死鸟之羽", "effect": "本次远征首次触发致命伤时，以最大生命值的 50% 复活。仅可触发一次。", "price": 42, "rare": true, "weight": 1, "unique": true},
 	"pilgrim_chalice": {"icon": 21, "name": "旅露圣杯", "effect": "每次进入非战斗节点时，恢复 2 点生命。", "price": 34, "rare": true, "weight": 1, "unique": true},
 }
+
+const SKILLS := preload("res://scripts/upgrades/skill_catalog.gd")
+var battle_rewards: Dictionary = {}
+var upgrades: Dictionary = {}
+var pending_upgrades := 0
+var upgrade_choices: Array[String] = []
+var upgrades_chosen := 0
 
 var rng := RandomNumberGenerator.new()
 var maps: Array = []
@@ -102,6 +106,11 @@ var report := ""
 var assigned_levels: Dictionary = {}
 
 func start_run(requested_seed: int = -1, selected_difficulty: int = Difficulty.STANDARD) -> void:
+	battle_rewards.clear()
+	upgrades.clear()
+	pending_upgrades = 0
+	upgrade_choices.clear()
+	upgrades_chosen = 0
 	difficulty = clampi(selected_difficulty, 0, 2) as Difficulty
 	experience_remainder = 0
 	if requested_seed < 0:
@@ -417,7 +426,7 @@ func leave_wish() -> void:
 		report = "你没有带走遗物，继续踏上旅途。"
 		node_pending = false
 
-func win_battle(remaining_health: float, progress: ExperienceProgress) -> String:
+func win_battle(remaining_health: float, progress: ExperienceProgress, defer_rewards: bool = false) -> String:
 	if not node_pending or not is_battle(current_kind):
 		return report
 	level = progress.level
@@ -432,7 +441,8 @@ func win_battle(remaining_health: float, progress: ExperienceProgress) -> String
 	var earned := base_gold + 2 * (floor_number - 1) + 3 * int(relics.get("coin", 0))
 	if relics.has("victory_badge"):
 		earned = ceili(earned * 1.20)
-	gold += earned
+	battle_rewards = {"gold": earned, "gold_claimed": not defer_rewards, "relic": "", "relic_claimed": true}
+	if not defer_rewards: gold += earned
 	var result := "获得 %d 金币" % earned
 	if current_kind == Kind.ELITE and relics.has("homeward_ember"):
 		var healed := _heal(8.0)
@@ -448,7 +458,10 @@ func win_battle(remaining_health: float, progress: ExperienceProgress) -> String
 	if dropped:
 		var id := _roll_item()
 		if not id.is_empty():
-			if can_receive_relic(id):
+			if defer_rewards:
+				battle_rewards.relic = id
+				battle_rewards.relic_claimed = false
+			elif can_receive_relic(id):
 				result += "\n获得%s · %s" % [ITEMS[id]["name"], _award_item(id)]
 			else:
 				result += "\n背包已满，无法携带掉落的%s。" % ITEMS[id]["name"]
@@ -562,3 +575,38 @@ func exchange_event_relic(index: int, discarded_id: String) -> bool:
 	report += _reward_event_completion()
 	node_pending = false
 	return true
+
+func skill(id: String) -> int:
+	return int(upgrades.get(id, 0))
+
+func next_upgrade_choices() -> Array[String]:
+	if pending_upgrades <= 0: return []
+	if upgrade_choices.is_empty():
+		upgrade_choices = SKILLS.offers(upgrades, hash("skills:%d:%d" % [run_seed,upgrades_chosen]))
+	return upgrade_choices.duplicate()
+
+func choose_upgrade(id: String) -> bool:
+	if pending_upgrades <= 0 or not id in upgrade_choices: return false
+	if skill(id) >= SKILLS.SKILLS[id].max: return false
+	upgrades[id] = skill(id) + 1
+	pending_upgrades -= 1
+	upgrades_chosen += 1
+	upgrade_choices.clear()
+	return true
+
+func claim_battle_gold() -> bool:
+	if battle_rewards.is_empty() or battle_rewards.gold_claimed: return false
+	gold += int(battle_rewards.gold)
+	battle_rewards.gold_claimed = true
+	return true
+
+func claim_battle_relic() -> bool:
+	if battle_rewards.is_empty() or battle_rewards.relic_claimed: return false
+	var id: String = battle_rewards.relic
+	if not can_receive_relic(id): return false
+	_award_item(id)
+	battle_rewards.relic_claimed = true
+	return true
+
+func skip_battle_relic() -> void:
+	if not battle_rewards.is_empty(): battle_rewards.relic_claimed = true

@@ -4,6 +4,8 @@ extends Node2D
 const NORMAL = preload("res://assets/projectiles/light_blade.png")
 const ENHANCED = preload("res://assets/projectiles/light_blade_enhanced.png")
 var direction := Vector2.RIGHT
+var damage_decay := 0.0
+var slow_fraction := 0.0
 var damage: float = 18.0
 var enhanced: bool = false
 var speed: float = 600.0
@@ -58,7 +60,11 @@ func _physics_process(delta: float) -> void:
 	for contact in contacts:
 		var enemy = contact.enemy
 		hit_targets.append(enemy)
-		enemy.take_damage(damage)
+		if owner_player.has_method("deal_skill_hit"): owner_player.deal_skill_hit(enemy, damage, false)
+		else: enemy.take_damage(damage)
+		if slow_fraction > 0 and not enemy.is_dead:
+			enemy.apply_movement_slow(slow_fraction,3.0)
+		damage *= 1.0 - damage_decay
 		hits_left -= 1
 		if hits_left <= 0:
 			queue_free()
