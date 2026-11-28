@@ -45,14 +45,12 @@ const KIND_DETAILS := [
 ]
 # icon 按图集从左到右、从上到下编号。
 const ITEMS := {
+	"blood_rose": {"icon_path":"res://assets/ui/relics/blood_rose.png", "name":"染血玫瑰", "effect":"获得时立即恢复所有生命值。", "price":16, "unique":true, "full_heal":true},
 	"fine_soft_armor": {"icon": 0, "name": "精良软甲", "effect": "战斗中每次形态切换完成后，获得 5 点护盾。", "price": 16, "unique": true, "event_only": true},
 	"blade": {"icon": 4, "name": "磨锋石", "effect": "攻击伤害 +4", "price": 18},
 	"heart": {"icon": 5, "name": "琥珀护符", "effect": "生命上限 +12，并回复 12 生命", "price": 22, "max_health": 12, "heal_on_acquire": 12},
 	"coin": {"icon": 6, "name": "旧王钱币", "effect": "每场胜利额外获得 3 金币", "price": 16},
 	"victory_badge": {"icon": 7, "name": "凯旋徽章", "effect": "战斗胜利获得的金币 +20%，向上取整。", "price": 22, "unique": true},
-	"lesser_vitality": {"icon": 8, "name": "青芽符", "effect": "生命上限 +8（可叠加）", "price": 12, "max_health": 8},
-	"greater_vitality": {"icon": 9, "name": "生息符", "effect": "生命上限 +16（可叠加）", "price": 20, "max_health": 16, "weight": 8},
-	"supreme_vitality": {"icon": 10, "name": "长生符", "effect": "生命上限 +28（可叠加）", "price": 30, "max_health": 28, "weight": 6},
 	"eclipse_shield": {"icon": 11, "name": "日蚀护镜", "effect": "开战获得最大生命 30% 的护盾。每次切换光影形态补充当时生命 10% 的护盾，战斗结束后清空。", "price": 32, "rare": true, "unique": true},
 	"merchant_pass": {"icon": 12, "name": "行商契约", "effect": "持有时，商店内所有商品按原价七折出售。", "price": 30, "rare": true, "unique": true},
 	"camp_kit": {"icon": 13, "name": "营火药囊", "effect": "进入休憩之所时立刻额外恢复 12 点生命。", "price": 20, "unique": true},
@@ -383,6 +381,7 @@ func _award_item(id: String) -> String:
 	if not can_receive_relic(id): return "背包已满或已持有该唯一遗物"
 	var item: Dictionary = ITEMS[id]
 	relics[id] = int(relics.get(id, 0)) + 1
+	if item.get("full_heal",false): _heal(max_health())
 	var instant_heal: float = item.get("heal_on_acquire", 0.0)
 	if instant_heal > 0.0:
 		_heal(instant_heal)
@@ -461,11 +460,11 @@ func win_battle(remaining_health: float, progress: ExperienceProgress, defer_rew
 	experience = progress.experience
 	total_experience = progress.total_experience
 	health = clampf(remaining_health, 0.0, max_health())
-	var base_gold := 12
+	var base_gold := 6
 	if current_kind == Kind.ELITE:
-		base_gold = 21
+		base_gold = 10
 	elif current_kind == Kind.BOSS:
-		base_gold = 32
+		base_gold = 14
 	var earned := base_gold + 2 * (floor_number - 1) + 3 * int(relics.get("coin", 0))
 	if relics.has("victory_badge"):
 		earned = ceili(earned * 1.20)
@@ -638,3 +637,10 @@ func claim_battle_relic() -> bool:
 
 func skip_battle_relic() -> void:
 	if not battle_rewards.is_empty(): battle_rewards.relic_claimed = true
+
+func accept_rest_commission() -> bool:
+	if not active or not node_pending or current_kind != Kind.REST: return false
+	gold += 8
+	report = "你替营地的旅人整理好物资，获得了8枚金币作为报酬。"
+	node_pending = false
+	return true

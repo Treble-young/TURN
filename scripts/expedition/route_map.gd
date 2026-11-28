@@ -440,7 +440,7 @@ func _confirm_node() -> void:
 	if TideTransition.busy or not Expedition.enter_node(selected.x, selected.y):
 		return
 	var scene := ARENA if Expedition.is_battle(Expedition.current_kind) else VISIT
-	if Expedition.current_kind in [Expedition.Kind.ENCOUNTER, Expedition.Kind.SHOP]:
+	if Expedition.current_kind in [Expedition.Kind.ENCOUNTER, Expedition.Kind.SHOP, Expedition.Kind.REST]:
 		scene = "res://scenes/events/story_event.tscn"
 	TideTransition.change_scene(scene)
 

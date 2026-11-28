@@ -1,0 +1,34 @@
+[gd_resource type="Resource" format=3 uid="uid://cxxeyf2qfelsa"]
+
+[ext_resource type="Resource" path="res://assets/enemies/beetle.tres" id="beetle"]
+[ext_resource type="Resource" uid="uid://b4qfvqrafesvq" path="res://assets/enemies/goblin.tres" id="goblin"]
+[ext_resource type="Resource" uid="uid://cuxhsb2uv4fej" path="res://assets/enemies/goblin_stone_thrower.tres" id="goblin_stone_thrower"]
+[ext_resource type="Resource" path="res://assets/enemies/golem.tres" id="golem"]
+[ext_resource type="Resource" path="res://assets/enemies/necromancer.tres" id="necromancer"]
+[ext_resource type="Script" uid="uid://bfibqbfsyvno5" path="res://scripts/enemies/enemy_catalog.gd" id="script"]
+[ext_resource type="Resource" path="res://assets/enemies/shaman.tres" id="shaman"]
+[ext_resource type="Resource" path="res://assets/enemies/skeleton.tres" id="skeleton"]
+[ext_resource type="Resource" uid="uid://chycsipmeic27" path="res://assets/enemies/slime_large.tres" id="slime_large"]
+[ext_resource type="Resource" uid="uid://dncjubcx11dwo" path="res://assets/enemies/slime_medium.tres" id="slime_medium"]
+[ext_resource type="Resource" uid="uid://7wckqnj1pxix" path="res://assets/enemies/slime_small.tres" id="slime_small"]
+[ext_resource type="Resource" uid="uid://dg80qiaaieise" path="res://assets/enemies/spiderling.tres" id="spiderling"]
+[ext_resource type="Resource" uid="uid://uorxvfwfd6ar" path="res://assets/enemies/spider_egg.tres" id="spider_egg"]
+[ext_resource type="Resource" uid="uid://bwebtcf4nquxe" path="res://assets/enemies/spider_matriarch.tres" id="spider_matriarch"]
+[ext_resource type="Resource" path="res://assets/enemies/yeti.tres" id="yeti"]
+
+[resource]
+script = ExtResource("script")
+spider_matriarch = ExtResource("spider_matriarch")
+spiderling = ExtResource("spiderling")
+spider_egg = ExtResource("spider_egg")
+necromancer = ExtResource("necromancer")
+skeleton = ExtResource("skeleton")
+yeti = ExtResource("yeti")
+golem = ExtResource("golem")
+shaman = ExtResource("shaman")
+beetle = ExtResource("beetle")
+slime_small = ExtResource("slime_small")
+goblin = ExtResource("goblin")
+goblin_stone_thrower = ExtResource("goblin_stone_thrower")
+slime_medium = ExtResource("slime_medium")
+slime_large = ExtResource("slime_large")

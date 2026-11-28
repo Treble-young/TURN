@@ -20,8 +20,8 @@ func _ready() -> void:
 	var card := PanelContainer.new()
 	card.custom_minimum_size.x = 590
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color("202333")
-	style.border_color = Color("bc9d65")
+	style.bg_color = Color("#f0d9ae")
+	style.border_color = Color("#67402a")
 	style.set_border_width_all(1)
 	style.set_corner_radius_all(8)
 	style.content_margin_left = 24

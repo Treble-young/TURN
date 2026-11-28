@@ -1,24 +1,7 @@
 extends RefCounted
 
 const BOSS_NAME := "深沼首领"
-const ENEMY_STATS := {
-	"spider_matriarch": preload("res://assets/enemies/spider_matriarch.tres"),
-	"spiderling": preload("res://assets/enemies/spiderling.tres"),
-	"spider_egg": preload("res://assets/enemies/spider_egg.tres"),
-	"necromancer": preload("res://assets/enemies/necromancer.tres"),
-	"skeleton": preload("res://assets/enemies/skeleton.tres"),
-	"yeti": preload("res://assets/enemies/yeti.tres"),
-	"golem": preload("res://assets/enemies/golem.tres"),
-
-	"shaman": preload("res://assets/enemies/shaman.tres"),
-	"beetle": preload("res://assets/enemies/beetle.tres"),
-	"slime_small": preload("res://assets/enemies/slime_small.tres"),
-	"goblin": preload("res://assets/enemies/goblin.tres"),
-	"goblin_stone_thrower": preload("res://assets/enemies/goblin_stone_thrower.tres"),
-	"slime_medium": preload("res://assets/enemies/slime_medium.tres"),
-	"slime_large": preload("res://assets/enemies/slime_large.tres"),
-}
-
+const ENEMY_CATALOG := preload("res://assets/enemies/catalog.tres")
 static func waves_for(kind: int, floor_number: int, stage: int = -1, lane: int = -1) -> Array:
 	var library = load("res://assets/maps/map_library.tres")
 	var scene: PackedScene = library.map_for(kind, floor_number, stage, lane)
@@ -35,7 +18,7 @@ static func waves_for(kind: int, floor_number: int, stage: int = -1, lane: int =
 	return waves
 
 static func stats_for(kind: String) -> EnemyStats:
-	return ENEMY_STATS["slime_large" if kind == "boss" else kind]
+	return ENEMY_CATALOG.get("slime_large" if kind == "boss" else kind) as EnemyStats
 
 static func wave_summary(wave: Array) -> String:
 	var counts := {}

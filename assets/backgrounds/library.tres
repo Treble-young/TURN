@@ -1,4 +1,4 @@
-[gd_resource type="Resource" load_steps=13 format=3]
+[gd_resource type="Resource" load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://scripts/events/background_library.gd" id="1"]
 [ext_resource type="Texture2D" path="res://assets/backgrounds/background_1.png" id="b1"]
@@ -13,6 +13,8 @@
 [ext_resource type="Texture2D" path="res://assets/backgrounds/background_10.png" id="b10"]
 [ext_resource type="Texture2D" path="res://assets/backgrounds/background_11.png" id="b11"]
 
+[ext_resource type="Texture2D" path="res://assets/backgrounds/background_12.png" id="b12"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/background_13.png" id="b13"]
 [resource]
 script = ExtResource("1")
-backgrounds = Array[Texture2D]([ExtResource("b1"), ExtResource("b2"), ExtResource("b3"), ExtResource("b4"), ExtResource("b5"), ExtResource("b6"), ExtResource("b7"), ExtResource("b8"), ExtResource("b9"), ExtResource("b10"), ExtResource("b11")])
+backgrounds = Array[Texture2D]([ExtResource("b1"), ExtResource("b2"), ExtResource("b3"), ExtResource("b4"), ExtResource("b5"), ExtResource("b6"), ExtResource("b7"), ExtResource("b8"), ExtResource("b9"), ExtResource("b10"), ExtResource("b11"), ExtResource("b12"), ExtResource("b13")])

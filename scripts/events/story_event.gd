@@ -16,7 +16,7 @@ var exchange_overlay: Control
 var exchange_choice := -1
 
 func _ready() -> void:
-	if not Expedition.active or not Expedition.node_pending or Expedition.current_kind not in [Expedition.Kind.ENCOUNTER, Expedition.Kind.SHOP]:
+	if not Expedition.active or not Expedition.node_pending or Expedition.current_kind not in [Expedition.Kind.ENCOUNTER, Expedition.Kind.SHOP, Expedition.Kind.REST]:
 		get_tree().change_scene_to_file.bind(MAP).call_deferred()
 		return
 	if Expedition.current_kind == Expedition.Kind.SHOP:
@@ -24,6 +24,11 @@ func _ready() -> void:
 		event.title = "道中行商"
 		event.background_id = 10
 		event.story = "你推开一扇木门，灯火照亮了堆满货物的小屋。柜台上摆着几件可供旅人挑选的珍物，旁边的字条写着：钱货两清，愿君一路平安。"
+	elif Expedition.current_kind == Expedition.Kind.REST:
+		event = StoryEventDefinition.new()
+		event.title = "休憩之所"
+		event.background_id = 12
+		event.story = "夜色渐深，营火驱散了山间的寒意。你放下行囊，可以在此休息、整理背包，或替营地的旅人完成一份小委托。"
 	else:
 		event = Expedition.current_story_event()
 	if event == null:
@@ -143,6 +148,9 @@ func _refresh_choices() -> void:
 		choices.remove_child(child)
 		child.queue_free()
 	shared_header.refresh()
+	if Expedition.current_kind == Expedition.Kind.REST:
+		_refresh_rest()
+		return
 	if Expedition.current_kind == Expedition.Kind.SHOP:
 		_refresh_shop()
 		return
@@ -253,3 +261,23 @@ func _shop_buy(id: String) -> void:
 func _shop_leave() -> void:
 	Expedition.complete_shop()
 	get_tree().change_scene_to_file(MAP)
+
+func _refresh_rest() -> void:
+	choices.position = Vector2(680,82)
+	narrative.text = event.story if Expedition.node_pending else Expedition.report
+	if not Expedition.node_pending:
+		_button("继续旅途",func(): get_tree().change_scene_to_file(MAP))
+		return
+	if Expedition.rest_entry_healed > 0:
+		narrative.text += "\n营火药囊已恢复%d点生命。" % roundi(Expedition.rest_entry_healed)
+	_button("休息\n恢复%d点生命" % roundi(Expedition.rest_heal_amount()),_rest_action.bind(0))
+	_button("整理背包\n遗物槽位 +1",_rest_action.bind(1))
+	_button("接受委托\n获得8金币",_rest_action.bind(2))
+
+func _rest_action(action: int) -> void:
+	if not Expedition.node_pending: return
+	match action:
+		0: Expedition.complete_rest()
+		1: Expedition.organize_backpack()
+		2: Expedition.accept_rest_commission()
+	_refresh_choices()

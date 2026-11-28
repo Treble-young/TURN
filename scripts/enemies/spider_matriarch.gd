@@ -1,11 +1,12 @@
 extends EclipseEnemy
 signal offspring_requested(kind: String, destination: Vector2, origin: Vector2)
-const WEB_HEALTH := 60.0
 var web_cooldown := 6.0
 var egg_cooldown := 14.0
 var egg_rng := RandomNumberGenerator.new()
 func _ready() -> void:
 	super._ready()
+	web_cooldown = stats.web_initial_cooldown
+	egg_cooldown = stats.egg_initial_cooldown
 	egg_rng.seed = hash("spider:%d:%d" % [Expedition.run_seed,Expedition.floor_number])
 func _physics_process(delta: float) -> void:
 	if is_dead: return
@@ -14,10 +15,10 @@ func _physics_process(delta: float) -> void:
 		egg_cooldown = maxf(0,egg_cooldown-delta)
 	if not is_attacking and stun_remaining <= 0 and is_instance_valid(target) and not target.is_dead:
 		if web_cooldown <= 0:
-			web_cooldown = 18.0
+			web_cooldown = stats.web_interval
 			_begin_special(&"web")
 		elif egg_cooldown <= 0:
-			egg_cooldown = 24.0
+			egg_cooldown = stats.egg_interval
 			# Use the supplied casting animation for egg launch as well.
 			_begin_special(&"web")
 			spell = &"eggs"
@@ -34,16 +35,16 @@ func _frame_changed() -> void:
 func _animation_finished() -> void:
 	if sprite.animation == &"web":
 		if spell == &"eggs":
-			_emit_eggs()
+			_emit_eggs(stats.egg_count)
 		elif is_instance_valid(target) and not target.is_dead:
 			_flash_silk()
-			target.bind_with_web(WEB_HEALTH)
+			target.bind_with_web(stats.web_strength)
 		is_attacking = false
 		sprite.play(&"move")
 		return
 	if sprite.animation == &"die":
-		_emit_spiders(3)
-		_emit_eggs(5)
+		_emit_spiders(stats.death_spider_count)
+		_emit_eggs(stats.death_egg_count)
 		hide()
 	super._animation_finished()
 func _emit_spiders(count: int) -> void:

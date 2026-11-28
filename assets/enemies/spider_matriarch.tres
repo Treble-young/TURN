@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="EnemyStats" format=3]
+[gd_resource type="Resource" script_class="EnemyStats" format=3 uid="uid://bwebtcf4nquxe"]
 
-[ext_resource type="Script" path="res://scripts/enemies/enemy_stats.gd" id="1"]
+[ext_resource type="Script" uid="uid://cw5uxevdxcojk" path="res://scripts/enemies/enemy_stats.gd" id="1"]
 
 [resource]
 script = ExtResource("1")
@@ -15,6 +15,5 @@ visual_scale = 0.99
 body_radius = 42.0
 frames_path = "res://assets/enemies/spider_matriarch_frames.tres"
 frame_origin = Vector2(-160, -286)
-hit_frame = 1
-hurt_radii = Vector2(140,108)
-hurt_offset = Vector2(-1,-106)
+hurt_radii = Vector2(140, 108)
+hurt_offset = Vector2(-1, -106)

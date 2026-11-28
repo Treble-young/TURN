@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="EnemyStats" format=3]
+[gd_resource type="Resource" script_class="EnemyStats" format=3 uid="uid://uorxvfwfd6ar"]
 
-[ext_resource type="Script" path="res://scripts/enemies/enemy_stats.gd" id="1"]
+[ext_resource type="Script" uid="uid://cw5uxevdxcojk" path="res://scripts/enemies/enemy_stats.gd" id="1"]
 
 [resource]
 script = ExtResource("1")
@@ -10,7 +10,6 @@ experience_reward = 0
 damage = 0.0
 move_speed = 0.0
 attack_range = 0.0
-attack_interval = 1
 visual_scale = 0.17
 body_radius = 12.0
 frames_path = "res://assets/enemies/spider_egg_frames.tres"

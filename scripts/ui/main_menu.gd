@@ -22,39 +22,23 @@ func _ready() -> void:
 	difficulty_dialog.canceled.connect(_close_difficulty)
 	resized.connect(queue_redraw)
 
-func _draw() -> void:
-	var center := Vector2(size.x * 0.5, size.y * 0.28)
-	draw_circle(center, 125.0, Color("242438"))
-	draw_arc(center, 126.0, 0.0, TAU, 128, Color("bc9d65"), 2.0, true)
-	draw_circle(center + Vector2(40, -20), 113.0, Color("11131f"))
-	var line_y := size.y - 48.0
-	draw_line(Vector2(size.x * 0.25, line_y), Vector2(size.x * 0.75, line_y), Color("353347"), 1.0)
-
 func _apply_theme() -> void:
-	var menu_theme := Theme.new()
-	var font := SystemFont.new()
-	font.font_names = PackedStringArray(["Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans CJK SC"])
-	menu_theme.default_font = font
-	menu_theme.default_font_size = 21
-	var colors := {
-		"normal": Color("202333"),
-		"hover": Color("34364b"),
-		"pressed": Color("454054"),
-		"disabled": Color("191c29"),
-		"focus": Color(0, 0, 0, 0)
-	}
-	for state in colors:
-		var style := StyleBoxFlat.new()
-		style.bg_color = colors[state]
-		style.set_corner_radius_all(6)
-		style.set_border_width_all(2 if state == "focus" else 1)
-		style.border_color = Color("e5c68b") if state == "focus" else Color("575068")
-		menu_theme.set_stylebox(state, "Button", style)
-	menu_theme.set_color("font_color", "Button", Color("f0e9dd"))
-	menu_theme.set_color("font_hover_color", "Button", Color("ffe0a2"))
-	menu_theme.set_color("font_focus_color", "Button", Color("ffe0a2"))
-	menu_theme.set_color("font_disabled_color", "Button", Color("737384"))
-	theme = menu_theme
+	theme = preload("res://scripts/ui/parchment_theme.gd").make()
+	$Background.hide()
+	var backdrop := TextureRect.new()
+	backdrop.texture = preload("res://assets/ui/parchment/main_background.png")
+	backdrop.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	backdrop.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(backdrop)
+	move_child(backdrop,0)
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	$Center/Menu.custom_minimum_size.x = 360
+	for button in $Center/Menu/Buttons.get_children(): button.custom_minimum_size = Vector2(360,60)
+	$Center/Menu/Title.add_theme_color_override("font_color",Color("#fff0c9"))
+	$Center/Menu/Title.add_theme_color_override("font_outline_color",Color("#352136"))
+	$Center/Menu/Title.add_theme_constant_override("outline_size",8)
+	$Center/Menu/Subtitle.add_theme_color_override("font_color",Color("#f4e3c8"))
 
 func _on_start_game_pressed() -> void:
 	for name in ["StartGame", "Options", "QuitGame"]:

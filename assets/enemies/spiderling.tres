@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="EnemyStats" format=3]
+[gd_resource type="Resource" script_class="EnemyStats" format=3 uid="uid://dg80qiaaieise"]
 
-[ext_resource type="Script" path="res://scripts/enemies/enemy_stats.gd" id="1"]
+[ext_resource type="Script" uid="uid://cw5uxevdxcojk" path="res://scripts/enemies/enemy_stats.gd" id="1"]
 
 [resource]
 script = ExtResource("1")
@@ -9,10 +9,9 @@ max_health = 112.0
 experience_reward = 0
 damage = 3.0
 move_speed = 120.0
-attack_range = 50.0
+attack_range = 45.0
 attack_interval = 1.2
 visual_scale = 0.21
 body_radius = 12.0
 frames_path = "res://assets/enemies/spiderling_frames.tres"
 frame_origin = Vector2(-160, -286)
-hit_frame = 1

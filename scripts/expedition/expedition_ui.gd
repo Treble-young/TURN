@@ -10,7 +10,8 @@ const RELIC_ICONS := preload("res://assets/ui/relics/icons.png")
 const RELIC_ICON_SIZE := 128
 const RELIC_ICON_COLUMNS := 4
 
-static func relic_icon(id: String) -> AtlasTexture:
+static func relic_icon(id: String) -> Texture2D:
+	if Expedition.ITEMS[id].has("icon_path"): return load(Expedition.ITEMS[id].icon_path)
 	var index: int = Expedition.ITEMS[id]["icon"]
 	@warning_ignore("integer_division")
 	var cell := Vector2i(index % RELIC_ICON_COLUMNS, index / RELIC_ICON_COLUMNS)
