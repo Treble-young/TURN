@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="EnemyStats" format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_stats.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "魅魔"
+max_health = 34.0
+experience_reward = 5
+damage = 5.0
+move_speed = 96.0
+attack_range = 360.0
+attack_interval = 2.8
+visual_scale = 0.48
+body_radius = 15.0
+frames_path = "res://assets/enemies/succubus_frames.tres"
+frame_origin = Vector2(-160, -286)
+hit_frame = 1

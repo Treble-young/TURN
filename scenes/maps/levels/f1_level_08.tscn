@@ -62,3 +62,13 @@ position = Vector2(578, 253)
 script = ExtResource("3")
 enemy_kind = "slime_large"
 encounter_variant = 2
+
+[node name="Succubus" type="Marker2D" parent="EnemySpawns"]
+position = Vector2(876, 291)
+script = ExtResource("3")
+enemy_kind = "succubus"
+
+[node name="GoldThief" type="Marker2D" parent="EnemySpawns"]
+position = Vector2(120, 430)
+script = ExtResource("3")
+enemy_kind = "gold_thief"

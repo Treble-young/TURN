@@ -2,6 +2,8 @@ extends Node2D
 
 const ENCOUNTER := preload("res://scripts/expedition/battle_encounter.gd")
 const ENEMY_SCENE := preload("res://scenes/enemies/enemy.tscn")
+const SUCCUBUS := preload("res://scripts/enemies/succubus.gd")
+const GOLD_THIEF := preload("res://scripts/enemies/gold_thief.gd")
 const SPIDER_MATRIARCH := preload("res://scripts/enemies/spider_matriarch.gd")
 const SPIDER_EGG := preload("res://scripts/enemies/spider_egg.gd")
 const MAP := "res://scenes/expedition/route_map.tscn"
@@ -147,6 +149,11 @@ func _spawn(kind: String, spot: Vector2, origin: Vector2 = Vector2.INF) -> void:
 		enemy.set_script(SPIDER_EGG)
 		enemy.set("launch_origin", origin)
 		enemy.connect("offspring_requested", _spawn)
+	elif kind == "succubus":
+		enemy.set_script(SUCCUBUS)
+	elif kind == "gold_thief":
+		enemy.set_script(GOLD_THIEF)
+		enemy.connect("caught", _award_thief_bounty)
 	var stats := ENCOUNTER.stats_for(kind).duplicate() as EnemyStats
 	var floor_scale := 1.0 + 0.13 * (Expedition.floor_number - 1)
 	var hard := Expedition.current_kind == Expedition.Kind.ELITE
@@ -166,6 +173,9 @@ func _spawn(kind: String, spot: Vector2, origin: Vector2 = Vector2.INF) -> void:
 	enemy.stats = stats
 	enemy.position = spot
 	add_child(enemy)
+
+func _award_thief_bounty(amount: int) -> void:
+	Expedition.gold += amount
 
 func _level_up(new_level: int) -> void:
 	Expedition.pending_upgrades += 1

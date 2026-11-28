@@ -9,6 +9,7 @@ signal died
 signal leveled_up(new_level: int)
 signal form_changed(new_form: int)
 
+const VULNERABILITY_DAMAGE_MULTIPLIER := 1.5
 enum Form { SHADOW, LIGHT }
 const SHADOW_FRAMES = preload("res://assets/characters/hero/shadow/shadow_frames.tres")
 const LIGHT_FRAMES = preload("res://assets/characters/hero/light/light_frames.tres")
@@ -77,6 +78,7 @@ var opening_ready := false
 var shadow_kills := 0
 
 var slow_remaining := 0.0
+var vulnerability_remaining := 0.0
 var web_health := 0.0
 var web_sprite: Sprite2D
 
@@ -108,6 +110,7 @@ func apply_slow(duration: float = 3.0) -> void:
 
 func _physics_process(_delta: float) -> void:
 	slow_remaining = maxf(0, slow_remaining - _delta)
+	vulnerability_remaining = maxf(0.0, vulnerability_remaining - _delta)
 	if is_dead or combat_locked:
 		return
 	if is_transforming:
@@ -135,6 +138,8 @@ func _physics_process(_delta: float) -> void:
 		_form_label.text += "  CHARGE %d%%" % roundi(charge_time / maxf(0.01, max_charge_time) * 100)
 		if not Input.is_action_pressed("attack"):
 			release_light_charge()
+	if vulnerability_remaining > 0.0:
+		_form_label.text += "\n易伤 %.1fs" % vulnerability_remaining
 	if current_form == Form.LIGHT and Input.is_action_just_pressed("attack"):
 		attack()
 	var direction := Input.get_vector("move_left", "move_right", "move_up", "move_down")
@@ -336,17 +341,22 @@ func set_shield(value: float) -> void:
 	shield = maxf(0.0, value)
 	shield_changed.emit(shield)
 
-func take_damage(amount: float, ranged: bool = false, slow_duration: float = 0.0) -> void:
+func take_damage(amount: float, ranged: bool = false, slow_duration: float = 0.0, vulnerability_duration: float = 0.0) -> void:
 	if is_dead or combat_locked or is_transforming or _hurt_timer > 0 or amount <= 0:
 		return
-	# 远程减伤先结算，护盾承受减免后的伤害。
+	# 远程减伤和已有易伤先结算，再由护盾吸收。
 	if ranged:
 		amount *= ranged_damage_multiplier
+	if vulnerability_remaining > 0.0:
+		amount *= VULNERABILITY_DAMAGE_MULTIPLIER
 	var absorbed := minf(amount, shield)
 	if absorbed > 0.0:
 		set_shield(shield - absorbed)
 	health = maxf(0.0, health - (amount - absorbed))
 	if amount > absorbed and slow_duration > 0: apply_slow(slow_duration)
+	# 首发心形正常结算，后续命中只刷新时长，伤害倍率不叠加。
+	if vulnerability_duration > 0.0:
+		vulnerability_remaining = vulnerability_duration
 	_hurt_timer = hurt_invulnerability
 	# 在进入死亡状态和关闭碰撞前复活，保留本场战斗状态。
 	if health <= 0.0 and try_revive.is_valid() and try_revive.call():

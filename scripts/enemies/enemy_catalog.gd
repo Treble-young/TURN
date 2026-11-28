@@ -14,3 +14,5 @@ extends Resource
 @export var goblin_stone_thrower: EnemyStats
 @export var slime_medium: EnemyStats
 @export var slime_large: EnemyStats
+@export var succubus: EnemyStats
+@export var gold_thief: EnemyStats

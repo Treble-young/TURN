@@ -13,7 +13,8 @@ func _ready() -> void:
 		shared_font = SystemFont.new()
 		shared_font.font_names = PackedStringArray(["Microsoft YaHei UI", "Microsoft YaHei"])
 		shared_font.font_weight = 700
-	caption = str(roundi(amount)) if is_equal_approx(amount, roundf(amount)) else "%.1f" % amount
+	if caption.is_empty():
+		caption = str(roundi(amount)) if is_equal_approx(amount, roundf(amount)) else "%.1f" % amount
 	var tween := create_tween().set_parallel(true)
 	tween.tween_property(self, "position", position + Vector2(drift, -48), 0.75).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_property(self, "modulate:a", 0.0, 0.28).set_delay(0.47)

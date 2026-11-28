@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="EnemyStats" format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_stats.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "宝箱怪"
+max_health = 42.0
+experience_reward = 0
+damage = 0.0
+move_speed = 205.0
+attack_range = 0.0
+attack_interval = 1
+visual_scale = 0.36
+body_radius = 15.0
+frames_path = "res://assets/enemies/gold_thief_frames.tres"
+frame_origin = Vector2(-160, -286)
+hit_frame = 1

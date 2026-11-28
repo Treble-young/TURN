@@ -15,6 +15,8 @@
 [ext_resource type="Resource" uid="uid://uorxvfwfd6ar" path="res://assets/enemies/spider_egg.tres" id="spider_egg"]
 [ext_resource type="Resource" uid="uid://bwebtcf4nquxe" path="res://assets/enemies/spider_matriarch.tres" id="spider_matriarch"]
 [ext_resource type="Resource" path="res://assets/enemies/yeti.tres" id="yeti"]
+[ext_resource type="Resource" path="res://assets/enemies/succubus.tres" id="succubus"]
+[ext_resource type="Resource" path="res://assets/enemies/gold_thief.tres" id="gold_thief"]
 
 [resource]
 script = ExtResource("script")
@@ -32,3 +34,5 @@ goblin = ExtResource("goblin")
 goblin_stone_thrower = ExtResource("goblin_stone_thrower")
 slime_medium = ExtResource("slime_medium")
 slime_large = ExtResource("slime_large")
+succubus = ExtResource("succubus")
+gold_thief = ExtResource("gold_thief")

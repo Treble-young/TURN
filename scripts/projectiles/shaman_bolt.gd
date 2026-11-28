@@ -7,6 +7,7 @@ const PLAYER_AND_TERRAIN_MASK := 1 | 4
 @export var frames: SpriteFrames = FRAMES
 var speed := SPEED
 var slow_duration := 0.0
+var vulnerability_duration := 0.0
 var destination: Vector2
 var damage := 0.0
 var sprite: AnimatedSprite2D
@@ -37,7 +38,7 @@ func _physics_process(delta: float) -> void:
 	var hit := get_world_2d().direct_space_state.intersect_ray(query)
 	if not hit.is_empty():
 		if hit.collider == player:
-			player.take_damage(damage, true, slow_duration)
+			player.take_damage(damage, true, slow_duration, vulnerability_duration)
 		queue_free()
 		return
 
