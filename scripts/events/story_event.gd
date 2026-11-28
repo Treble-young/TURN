@@ -160,7 +160,10 @@ func _refresh_choices() -> void:
 		return
 	event = Expedition.current_story_event()
 	choices.position.y = 82 + (3 - event.choices.size()) * (CHOICE_SIZE.y + 10)
-	narrative.text = event.story if Expedition.report.is_empty() else Expedition.report + "\n" + event.story
+	narrative.text = event.story
+	if not Expedition.report.is_empty():
+		var retrying := event.choices.any(func(option: StoryEventChoice): return option.retry_on_failure)
+		narrative.text = Expedition.report if retrying else Expedition.report + "\n" + event.story
 	for index in event.choices.size():
 		var choice := event.choices[index]
 		var allowed := Expedition.can_choose_event(index)

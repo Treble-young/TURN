@@ -353,14 +353,22 @@ func drop_chance(kind: int) -> float:
 	var base := ELITE_DROP if kind == Kind.ELITE else NORMAL_DROP
 	return base + minf(MAX_XP_DROP_BONUS, total_experience * DROP_PER_XP)
 
-func _roll_item(excluded: Array[String] = []) -> String:
+func _item_roll_weight(id: String, common_only: bool) -> int:
+	var item: Dictionary = ITEMS[id]
+	var rare: bool = item.get("rare", false)
+	if item.get("event_only", false) or (common_only and rare) or _unique_relic_unavailable(id):
+		return 0
+	return item.get("weight", RARE_ITEM_WEIGHT if rare else COMMON_ITEM_WEIGHT)
+
+func _roll_item(excluded: Array[String] = [], common_only: bool = false) -> String:
 	var weights := {}
 	var total_weight := 0
 	for id: String in ITEMS:
-		var item: Dictionary = ITEMS[id]
-		if item.get("event_only", false) or excluded.has(id) or _unique_relic_unavailable(id):
+		if excluded.has(id):
 			continue
-		var weight: int = item.get("weight", RARE_ITEM_WEIGHT if item.get("rare", false) else COMMON_ITEM_WEIGHT)
+		var weight := _item_roll_weight(id, common_only)
+		if weight <= 0:
+			continue
 		weights[id] = weight
 		total_weight += weight
 	if total_weight <= 0:
@@ -532,6 +540,9 @@ func can_choose_event(index: int) -> bool:
 	if event == null or index < 0 or index >= event.choices.size(): return false
 	var choice := event.choices[index]
 	if choice.exchange_relic: return used_relic_slots() > 0
+	if choice.random_common_relic:
+		if used_relic_slots() >= relic_capacity or not ITEMS.keys().any(func(id: String): return _item_roll_weight(id, true) > 0):
+			return false
 	return gold >= choice.gold_cost and (choice.health_cost <= 0.0 or health > choice.health_cost) and (choice.relic_id.is_empty() or can_receive_relic(choice.relic_id))
 
 func choose_event(index: int) -> bool:
@@ -539,6 +550,9 @@ func choose_event(index: int) -> bool:
 	var choice := current_story_event().choices[index]
 	if choice.exchange_relic: return false
 	var reward_won := choice.reward_chance >= 1.0 or rng.randf() < choice.reward_chance
+	var prize_id := _roll_item([], true) if reward_won and choice.random_common_relic else ""
+	if reward_won and choice.random_common_relic and not can_receive_relic(prize_id):
+		return false
 	gold -= choice.gold_cost
 	if reward_won: gold += choice.gold_reward
 	health -= choice.health_cost
@@ -546,6 +560,10 @@ func choose_event(index: int) -> bool:
 	event_attack_bonus += choice.attack_bonus
 	if not choice.relic_id.is_empty(): _award_item(choice.relic_id)
 	report = choice.result_text if reward_won else choice.failure_text
+	if not prize_id.is_empty():
+		report += "\n获得%s · %s" % [ITEMS[prize_id]["name"], _award_item(prize_id)]
+	if not reward_won and choice.retry_on_failure:
+		return true
 	if choice.next_event is StoryEventDefinition:
 		event_followup = choice.next_event
 		return true

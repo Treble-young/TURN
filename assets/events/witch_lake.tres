@@ -1,0 +1,46 @@
+[gd_resource type="Resource" script_class="StoryEventDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/events/event_definition.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/events/event_choice.gd" id="2"]
+[ext_resource type="Texture2D" path="res://assets/events/witch.png" id="3"]
+
+[sub_resource type="Resource" id="LeaveRewarded"]
+script = ExtResource("2")
+text = "带着遗物离开湖畔"
+result_text = "你收好遗物，转身离开。湖面上的涟漪渐渐平息。"
+
+[sub_resource type="Resource" id="Rewarded"]
+script = ExtResource("1")
+event_id = "witch_lake_rewarded"
+title = "雾湖沉金"
+npc_name = "女巫"
+background_id = 6
+portrait = ExtResource("3")
+story = "女巫拢紧斗篷：「湖已经回礼了，带上它走吧。」"
+choices = Array[ExtResource("2")]([SubResource("LeaveRewarded")])
+
+[sub_resource type="Resource" id="TossCoin"]
+script = ExtResource("2")
+text = "投入一枚金币，试试手气\n消耗 1 金币 · 有机会获得一件普通遗物"
+gold_cost = 1
+reward_chance = 0.10526315789473684
+random_common_relic = true
+result_text = "金币沉入水中，一件沾着水草的遗物浮到岸边。"
+failure_text = "金币没入湖底，只留下一圈涟漪。女巫看着你，等你决定要不要再试。"
+retry_on_failure = true
+next_event = SubResource("Rewarded")
+
+[sub_resource type="Resource" id="Leave"]
+script = ExtResource("2")
+text = "就此离开这片不祥的湖"
+result_text = "你把金币收回钱袋，沿着来路离开了湖畔。"
+
+[resource]
+script = ExtResource("1")
+event_id = "witch_lake"
+title = "雾湖沉金"
+npc_name = "女巫"
+background_id = 6
+portrait = ExtResource("3")
+story = "薄雾浮在广阔的湖面上，昔日的商队沉睡在水底。女巫低声说：「投一枚金币吧。湖若收下，或许会把商队留下的东西还给你。」"
+choices = Array[ExtResource("2")]([SubResource("TossCoin"), SubResource("Leave")])
